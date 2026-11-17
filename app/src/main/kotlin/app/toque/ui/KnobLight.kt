@@ -17,7 +17,7 @@ import java.util.concurrent.Executors
 object KnobLight {
     private const val LEDS = "/sys/class/leds"
     private const val SAVED = "/data/local/tmp/toque-knob-light.saved"
-    const val NIGHT_LEVEL = 8
+    const val NIGHT_LEVEL = 3
 
     private val worker = Executors.newSingleThreadExecutor { r -> Thread(r, "toque-molette").apply { isDaemon = true } }
     @Volatile private var dimmed = false
