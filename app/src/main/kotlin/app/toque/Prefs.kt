@@ -104,6 +104,13 @@ class Prefs(context: Context) {
             p.edit().putInt("standbyMinutes", v).commit()
         }
 
+    /** Pendant la veille, la lumière de la molette respire lentement. */
+    var standbyKnobLight: Boolean
+        get() = p.getBoolean("standbyKnobLight", true)
+        set(v) {
+            p.edit().putBoolean("standbyKnobLight", v).commit()
+        }
+
     /** Fuseau horaire : « auto » (d'après la connexion Internet) ou un identifiant IANA choisi à la main. */
     var timeZone: String
         get() = p.getString("timeZone", "auto") ?: "auto"

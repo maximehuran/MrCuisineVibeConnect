@@ -119,6 +119,7 @@ class Standby(private val a: MainActivity, private val root: FrameLayout) {
         v.alpha = 0f
         v.animate().alpha(1f).setDuration(800).start()
         brightness(0.02f)
+        if (a.prefs.standbyKnobLight) KnobLight.start()
         main.postDelayed(tick, 60_000)
     }
 
@@ -132,6 +133,7 @@ class Standby(private val a: MainActivity, private val root: FrameLayout) {
         clock = null
         hot = null
         brightness(WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE)
+        KnobLight.stop()
     }
 
     private fun refresh() {
