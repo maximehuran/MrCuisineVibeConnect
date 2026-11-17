@@ -109,6 +109,15 @@ class SettingsScreen(a: MainActivity) : Screen(a) {
             a.applyLanguage()
         }, Ui.lp(Ui.MATCH, Ui.u(58), t = 4))
 
+        // ---- Écran
+        val screen = section(right, tr("Écran"), Icon.Kind.CLOCK)
+        val delays = listOf("0" to tr("Jamais")) + listOf(2, 5, 10, 15, 30).map { it.toString() to tr("Après %d min", it) }
+        screen.addView(Ui.text(c, tr("Mise en veille"), 18f, Ui.TEXT))
+        screen.addView(dropdown(delays, a.prefs.standbyMinutes.toString()) { m -> a.prefs.standbyMinutes = m.toInt() },
+            Ui.lp(Ui.MATCH, Ui.u(58), t = 8))
+        screen.addView(Ui.text(c, tr("Sans geste ni programme en cours, l'écran s'assombrit et n'affiche plus que l'heure. Touchez-le ou tournez le bouton pour reprendre ; le couvercle et la balance le réveillent aussi."),
+            15f, Ui.TEXT3).apply { setLineSpacing(0f, 1.1f) }, Ui.lp(t = 8))
+
         // ---- Date et heure
         val time = section(right, tr("Date et heure"), Icon.Kind.CLOCK)
         val zones = listOf(ZoneLookup.AUTO to tr("Automatique (d'après la connexion Internet)")) +
