@@ -104,7 +104,7 @@ class Prefs(context: Context) {
             p.edit().putInt("standbyMinutes", v).commit()
         }
 
-    /** Pendant la veille, la lumière de la molette respire lentement. */
+    /** Pendant la veille, la molette reste allumée en veilleuse (blanc faible). */
     var standbyKnobLight: Boolean
         get() = p.getBoolean("standbyKnobLight", true)
         set(v) {
