@@ -21,6 +21,11 @@ class EditionSmoke : Instrumentation() {
         val result = Bundle()
         try {
             val edition = EditionStorage.edition
+            val flags = android.content.pm.PackageManager.GET_META_DATA or android.content.pm.PackageManager.GET_SIGNATURES
+            val archive = targetContext.packageManager.getPackageArchiveInfo(targetContext.applicationInfo.sourceDir, flags)
+            check(archive.applicationInfo.metaData?.getString("app.toque.edition") == edition.key) { "APK edition metadata missing" }
+            val installed = targetContext.packageManager.getPackageInfo("app.toque", flags)
+            check(archive.signatures.toSet() == installed.signatures.toSet()) { "APK certificate lookup differs" }
             val prefs = EditionStorage.preferences(targetContext)
             val repo = RecipeRepo(targetContext)
             val id = "ci-${edition.key}"
