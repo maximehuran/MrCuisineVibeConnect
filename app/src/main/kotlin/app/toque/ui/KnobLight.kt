@@ -4,7 +4,7 @@ import app.toque.core.machine.RootShell
 import java.util.concurrent.Executors
 
 /**
- * Lumière de la molette pendant la veille : une veilleuse blanche, faible et fixe.
+ * Lumière de la molette pendant la veille : une veilleuse blanche, faible et fixe, ou éteinte.
  *
  * L'anneau a trois LED, vues par Android sous /sys/class/leds : « red » (rouge), « green » (vert)
  * et « blue », qui allume en fait du blanc (SKMC 1200 C3 ; pas de LED bleue). Une intensité fixe
@@ -22,7 +22,8 @@ object KnobLight {
     private val worker = Executors.newSingleThreadExecutor { r -> Thread(r, "toque-molette").apply { isDaemon = true } }
     @Volatile private var dimmed = false
 
-    fun start() {
+    /** [level] : intensité du blanc pendant la veille ([NIGHT_LEVEL] en veilleuse, 0 pour éteindre). */
+    fun start(level: Int) {
         if (dimmed) return
         dimmed = true
         worker.execute {
@@ -30,7 +31,7 @@ object KnobLight {
                 """
                 L=$LEDS
                 [ -f $SAVED ] || echo "${'$'}(cat ${'$'}L/red/brightness) ${'$'}(cat ${'$'}L/green/brightness) ${'$'}(cat ${'$'}L/blue/brightness)" > $SAVED
-                echo 0 > ${'$'}L/red/brightness; echo 0 > ${'$'}L/green/brightness; echo $NIGHT_LEVEL > ${'$'}L/blue/brightness
+                echo 0 > ${'$'}L/red/brightness; echo 0 > ${'$'}L/green/brightness; echo $level > ${'$'}L/blue/brightness
                 """.trimIndent(),
                 8_000,
             )

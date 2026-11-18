@@ -96,11 +96,15 @@ class Prefs(context: Context) {
             p.edit().putInt("standbyMinutes", v).commit()
         }
 
-    /** Pendant la veille, la molette reste allumée en veilleuse (blanc faible). */
-    var standbyKnobLight: Boolean
-        get() = p.getBoolean("standbyKnobLight", true)
+    /**
+     * Molette pendant la veille : « normal » (inchangée), « dim » (veilleuse blanche faible) ou
+     * « off » (éteinte). Reprend l'ancien interrupteur « standbyKnobLight » s'il a été réglé.
+     */
+    var standbyKnob: String
+        get() = p.getString("standbyKnob", null)
+            ?: if (p.getBoolean("standbyKnobLight", true)) "dim" else "normal"
         set(v) {
-            p.edit().putBoolean("standbyKnobLight", v).commit()
+            p.edit().putString("standbyKnob", v).commit()
         }
 
     /** Fuseau horaire : « auto » (d'après la connexion Internet) ou un identifiant IANA choisi à la main. */
