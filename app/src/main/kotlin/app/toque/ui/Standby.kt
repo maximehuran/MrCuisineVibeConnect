@@ -119,7 +119,10 @@ class Standby(private val a: MainActivity, private val root: FrameLayout) {
         v.alpha = 0f
         v.animate().alpha(1f).setDuration(800).start()
         brightness(0.02f)
-        if (a.prefs.standbyKnobLight) KnobLight.start()
+        when (a.prefs.standbyKnob) {
+            "dim" -> KnobLight.start(KnobLight.NIGHT_LEVEL)
+            "off" -> KnobLight.start(0)
+        }
         main.postDelayed(tick, 60_000)
     }
 
