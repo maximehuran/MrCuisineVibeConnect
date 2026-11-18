@@ -8,6 +8,7 @@ from pathlib import Path
 import re
 import shutil
 import subprocess
+import xml.etree.ElementTree as ET
 
 UPSTREAM = "Wuki60/MrCuisineVibeConnect"
 FORK = "maximehuran/MrCuisineVibeConnect"
@@ -137,13 +138,18 @@ def prepare(plan_path):
             output.write(f"version={plan['version_name']}\ncode={plan['version_code']}\n")
 
 
-def verify_apk(apk, plan):
+def verify_apk(apk, plan, edition="fork"):
     sdk = Path(os.environ["ANDROID_HOME"])
     analyzer = sdk / "cmdline-tools/latest/bin/apkanalyzer"
     for field, expected in [("application-id", "app.toque"), ("version-name", plan["version_name"]),
                             ("version-code", str(plan["version_code"]))]:
         if run(str(analyzer), "manifest", field, str(apk)).stdout.strip() != expected:
             raise ValueError(f"Built APK has incorrect {field}")
+    xml = ET.fromstring(run(str(analyzer), "manifest", "print", str(apk)).stdout)
+    android = "{http://schemas.android.com/apk/res/android}"
+    metadata = {m.get(android + "name"): m.get(android + "value") for m in xml.findall("application/meta-data")}
+    if metadata.get("app.toque.edition") != edition:
+        raise ValueError("Built APK has the wrong edition")
     signers = sorted(sdk.glob("build-tools/*/apksigner"))
     if not signers:
         raise ValueError("Android APK signature verifier missing")
@@ -165,37 +171,58 @@ def publish(plan_path):
     apk = plan_path.parent / f"Toque-{plan['version_name']}.apk"
     shutil.copyfile("app/build/outputs/apk/release/app-release.apk", apk)
     verify_apk(apk, plan)
+    reference_apk = plan_path.parent / f"Toque-reference-{plan['version_name']}.apk"
+    reference_dir = Path(os.environ["REFERENCE_BUILD_DIR"])
+    shutil.copyfile(reference_dir / "app/build/outputs/apk/release/app-release.apk", reference_apk)
+    verify_apk(reference_apk, plan, "reference")
     plan["apk_sha256"] = hashlib.sha256(apk.read_bytes()).hexdigest()
+    reference_sha = hashlib.sha256(reference_apk.read_bytes()).hexdigest()
+    reference_tag = "reference-" + plan["tag"]
+    plan["reference"] = json.loads((reference_dir.parent / "reference-provenance.json").read_text())
+    plan["reference"]["apk_sha256"] = reference_sha
     manifest = plan_path.parent / "fork-manifest.json"
     manifest.write_text(json.dumps(plan, indent=2) + "\n")
+    editions = {"format": "toque-editions-1", "tag": plan["tag"], "version_name": plan["version_name"],
+                "version_code": plan["version_code"], "editions": {}}
+    for key, tag, file, digest in [("fork", plan["tag"], apk, plan["apk_sha256"]),
+                                   ("reference", reference_tag, reference_apk, reference_sha)]:
+        editions["editions"][key] = {"name": file.name, "size": file.stat().st_size, "sha256": digest,
+            "url": f"https://github.com/{FORK}/releases/download/{tag}/{file.name}"}
+    edition_manifest = plan_path.parent / "edition-manifest.json"
+    edition_manifest.write_text(json.dumps(editions, indent=2) + "\n")
     checksums = plan_path.parent / "SHA256SUMS.txt"
-    checksums.write_text(f"{plan['apk_sha256']}  {apk.name}\n")
+    checksums.write_text(f"{plan['apk_sha256']}  {apk.name}\n{reference_sha}  {reference_apk.name}\n")
     notes = plan_path.parent / "notes.md"
-    notes.write_text(f"""Toque {plan['version_name']} — fork de Maxime Huran
+    notes.write_text(f"""Deux versions : **Fork Maxime** et **Référence Wuki60**. Sélecteur dans Réglages → Version de l’application.
 
-Base officielle : [{plan['upstream']['tag']}](https://github.com/{UPSTREAM}/releases/tag/{plan['upstream']['tag']}).
-Ce fork conserve ses fonctionnalités, dont les sources JSON configurables. Les recettes restent dans un dépôt séparé.
+Chaque version conserve ses propres recettes, favoris, préférences et images. La référence démarre avec un catalogue séparé à synchroniser depuis Réglages. Au premier lancement, seuls les réglages de machine, de sécurité et de langue sont repris du fork.
 
-Mises à jour : recherche et confirmation manuelles sur le robot, depuis {FORK}. Aucune installation automatique.
+La référence est construite depuis [{plan['upstream']['tag']}](https://github.com/{UPSTREAM}/releases/tag/{plan['upstream']['tag']}) avec uniquement le sélecteur, le mécanisme de distribution et des noms de fichiers distincts. Sa logique de favoris reste celle de Wuki60. La liste des fichiers adaptés figure dans fork-manifest.json.
 
-Tests unitaires, migration SQLite, tests de synchronisation du fork et compilation Android 6 réussis.
-Signature, identifiant, version et adresse de mise à jour de l'APK vérifiés. [Compilation]({plan['workflow_run']}).
-Cette compilation n'a pas encore été validée physiquement sur le robot. Premier essai : import et affichage des recettes.
+Même paquet, signature, version et code Android pour les deux APK : le passage dans les deux sens conserve les données, sans désinstallation ni rétrogradation. Les deux modes cherchent leurs mises à jour sur ce dépôt, sur demande et après confirmation.
 
-Sauvegarder les données de Toque avant l'installation initiale. La base de recettes passe en version 2 ; revenir à l'ancienne application nécessite de restaurer sa sauvegarde.
+Compatibilité HTTPS Android 6 pour les mises à jour : certificats publics Sectigo E46 et ISRG Root X1 ajoutés à la confiance de l’application, sans désactiver la vérification des certificats ni du nom du serveur. Le téléchargement précède la suspension de la liaison machine : un échec réseau laisse cette liaison intacte.
+
+Tests des deux éditions, signatures, métadonnées APK et passage aller-retour sous émulateur Android 6 vérifiés. [Compilation]({plan['workflow_run']}). Aucun essai physique de cette compilation sur le robot n’est revendiqué.
+
+La release normale contient uniquement l’APK du fork pour rester compatible avec l’ancien mécanisme de mise à jour. L’APK de référence est dans la release de distribution `{reference_tag}` ; le sélecteur le récupère automatiquement. Cette release de distribution est marquée préversion pour rester exclue du flux « latest ». Sa base Wuki60 provient toujours d’une vraie release officielle.
 """)
-    # No forced update, even if a human pushed during the build. The branch/tag push is atomic.
+    # Refuse a concurrent main update; never force a branch or reuse a reserved tag.
     remote = git("ls-remote", "origin", "refs/heads/main").split()[0]
     if remote != plan["initial_commit"]:
         raise ValueError("Remote main changed during the build; retry on its new head")
     git("tag", plan["tag"], plan["source_commit"])
-    git("push", "--atomic", "origin", "HEAD:refs/heads/main", f"refs/tags/{plan['tag']}")
-    # gh creates a draft, uploads all assets, then publishes. Failed uploads cannot advertise an incomplete APK.
-    run("gh", "release", "create", plan["tag"], str(apk), str(manifest), str(checksums),
-        "--repo", FORK, "--verify-tag", "--latest", "--title", f"Toque {plan['version_name']} — Maxime",
+    git("tag", reference_tag, plan["source_commit"])
+    git("push", "--atomic", "origin", "HEAD:refs/heads/main", f"refs/tags/{plan['tag']}", f"refs/tags/{reference_tag}")
+    # Reference is published first, outside 'latest'. Only a complete pair becomes the advertised stable release.
+    run("gh", "release", "create", reference_tag, str(reference_apk), str(manifest), str(checksums),
+        "--repo", FORK, "--verify-tag", "--prerelease", "--latest=false",
+        "--title", f"Référence Wuki60 — {plan['version_name']}", "--notes-file", str(notes))
+    run("gh", "release", "create", plan["tag"], str(apk), str(manifest), str(edition_manifest), str(checksums),
+        "--repo", FORK, "--verify-tag", "--latest", "--title", f"Toque {plan['version_name']} — deux éditions",
         "--notes-file", str(notes))
     with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as summary:
-        summary.write(f"## Published {plan['tag']}\n\nhttps://github.com/{FORK}/releases/tag/{plan['tag']}\n")
+        summary.write(f"## Published {plan['tag']} (fork + reference)\n\nhttps://github.com/{FORK}/releases/tag/{plan['tag']}\n")
 
 
 if __name__ == "__main__":

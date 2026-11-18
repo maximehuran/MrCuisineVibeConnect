@@ -15,7 +15,7 @@ jobs:
   release:
     if: github.repository == 'maximehuran/MrCuisineVibeConnect' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 30
     env:
       GH_TOKEN: ${{ github.token }}
     steps:
@@ -24,7 +24,9 @@ jobs:
           ref: main
           fetch-depth: 0
       - name: Release workspace
-        run: echo "RELEASE_PLAN=$RUNNER_TEMP/fork-release/plan.json" >> "$GITHUB_ENV"
+        run: |
+          echo "RELEASE_PLAN=$RUNNER_TEMP/fork-release/plan.json" >> "$GITHUB_ENV"
+          echo "REFERENCE_BUILD_DIR=$RUNNER_TEMP/reference" >> "$GITHUB_ENV"
       - name: Check stable upstream release and prepare local merge
         id: prepare
         run: python3 tools/fork/release.py prepare --plan "$RELEASE_PLAN"
@@ -38,12 +40,37 @@ jobs:
         run: |
           python3 tools/test_fork_release.py
           python3 tools/test_recipe_storage.py
+      - name: Prepare reference from the selected official release
+        if: steps.prepare.outputs.publish == 'true'
+        run: |
+          sha=$(python3 -c 'import json,os; print(json.load(open(os.environ["RELEASE_PLAN"]))["upstream"]["sha"])')
+          python3 tools/fork/prepare_reference.py --sha "$sha" --directory "$REFERENCE_BUILD_DIR"
       - name: Unit tests and signed Android build
         if: steps.prepare.outputs.publish == 'true'
         env:
           FORK_VERSION: ${{ steps.prepare.outputs.version }}
           FORK_CODE: ${{ steps.prepare.outputs.code }}
-        run: ./gradlew --no-daemon :core:test :app:assembleRelease -PforkVersionName="$FORK_VERSION" -PforkVersionCode="$FORK_CODE"
+        run: ./gradlew --no-daemon :core:test :app:assembleRelease :app:assembleAndroidTest -PforkVersionName="$FORK_VERSION" -PforkVersionCode="$FORK_CODE" -PtoqueEdition=fork
+      - name: Reference unit tests and signed APK
+        if: steps.prepare.outputs.publish == 'true'
+        env:
+          FORK_VERSION: ${{ steps.prepare.outputs.version }}
+          FORK_CODE: ${{ steps.prepare.outputs.code }}
+        run: |
+          cd "$REFERENCE_BUILD_DIR"
+          ./gradlew --no-daemon :core:test :app:assembleRelease -PforkVersionName="$FORK_VERSION" -PforkVersionCode="$FORK_CODE" -PtoqueEdition=reference
+      - name: Enable emulator acceleration
+        if: steps.prepare.outputs.publish == 'true'
+        run: sudo chmod 666 /dev/kvm
+      - name: Android 6 edition round trip, favorite persistence and HTTPS
+        if: steps.prepare.outputs.publish == 'true'
+        uses: ReactiveCircus/android-emulator-runner@4c44018e59b437e86cdfc41da381398f93ed8808
+        with:
+          api-level: 23
+          target: default
+          arch: x86_64
+          emulator-boot-timeout: 300
+          script: python3 tools/fork/smoke_android6.py
       - name: Verify APK, commit only the tested merge and publish
         if: steps.prepare.outputs.publish == 'true'
         run: python3 tools/fork/release.py publish --plan "$RELEASE_PLAN"

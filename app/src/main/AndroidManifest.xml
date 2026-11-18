@@ -21,6 +21,8 @@
         android:supportsRtl="false"
         android:theme="@android:style/Theme.Material.NoActionBar.Fullscreen">
 
+        <meta-data android:name="app.toque.edition" android:value="${toqueEdition}" />
+
         <activity
             android:name=".ui.MainActivity"
             android:clearTaskOnLaunch="true"

@@ -20,7 +20,7 @@ import java.util.concurrent.Executors
  * L'appli fonctionne entièrement hors ligne ; seule la synchro passe par le réseau.
  */
 class RecipeRepo(private val context: Context) {
-    private val helper = object : SQLiteOpenHelper(context, "recettes.db", null, RecipeStorageSchema.VERSION) {
+    private val helper = object : SQLiteOpenHelper(context, app.toque.update.EditionStorage.databaseName, null, RecipeStorageSchema.VERSION) {
         override fun onCreate(db: SQLiteDatabase) {
             db.execSQL(RecipeStorageSchema.CREATE_RECIPES)
             db.execSQL(RecipeStorageSchema.SOURCE_INDEX)
@@ -44,7 +44,7 @@ class RecipeRepo(private val context: Context) {
         private set
     private val favorites = HashSet<String>()
 
-    val imagesDir: File get() = File(context.filesDir, "images").apply { mkdirs() }
+    val imagesDir: File get() = File(context.filesDir, app.toque.update.EditionStorage.imagesDirectory).apply { mkdirs() }
 
     fun onChange(l: () -> Unit): () -> Unit {
         listeners += l

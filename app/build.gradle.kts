@@ -55,6 +55,13 @@ android {
     }
 }
 
+// BEGIN DISTRIBUTIONS: also appended to the pristine upstream reference checkout by CI.
+android.buildFeatures.buildConfig = true
+android.defaultConfig {
+    buildConfigField("String", "TOQUE_EDITION", "\"${providers.gradleProperty("toqueEdition").orElse("fork").get()}\"")
+    manifestPlaceholders["toqueEdition"] = providers.gradleProperty("toqueEdition").orElse("fork").get()
+    testInstrumentationRunner = "app.toque.EditionSmoke"
+}
 // Fork release numbering is supplied by CI. Keep the upstream defaults above mergeable.
 if (providers.gradleProperty("forkVersionCode").isPresent) {
     android.defaultConfig {
@@ -62,6 +69,7 @@ if (providers.gradleProperty("forkVersionCode").isPresent) {
         versionName = providers.gradleProperty("forkVersionName").get()
     }
 }
+// END DISTRIBUTIONS
 
 kotlin {
     compilerOptions { jvmTarget.set(JvmTarget.JVM_11) }

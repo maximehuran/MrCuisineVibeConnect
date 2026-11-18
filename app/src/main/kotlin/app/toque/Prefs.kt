@@ -13,7 +13,7 @@ import app.toque.core.recipes.JsonRecipeSource
  */
 class Prefs(context: Context) {
     @Suppress("DEPRECATION")
-    private val p: SharedPreferences = context.getSharedPreferences("toque", Context.MODE_MULTI_PROCESS)
+    private val p: SharedPreferences = app.toque.update.EditionStorage.preferences(context)
 
     enum class Mode(val key: String, private val fr: String) {
         DEMO("demo", trKey("Démo (base simulée)")),

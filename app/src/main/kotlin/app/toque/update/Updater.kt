@@ -12,12 +12,19 @@ import app.toque.core.i18n.tr
 import app.toque.core.machine.RootShell
 import app.toque.core.update.Release
 import app.toque.core.update.Releases
+import app.toque.core.update.Edition
+import app.toque.core.update.Editions
+import app.toque.core.update.EditionArtifact
+import app.toque.core.json.Json
+import app.toque.core.json.obj
 import app.toque.ui.MainActivity
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.URL
+import java.security.MessageDigest
+import java.io.ByteArrayOutputStream
 import javax.net.ssl.SSLException
 
 /**
@@ -28,6 +35,8 @@ class Updater(private val context: Context) {
     class Failure(message: String) : Exception(message)
 
     private val log = ToqueApp.of(context).log
+    private val https = UpdateHttps(context)
+    private var artifact: EditionArtifact? = null
 
     @Suppress("DEPRECATION")
     private val info = context.packageManager.getPackageInfo(context.packageName, 0)
@@ -36,7 +45,8 @@ class Updater(private val context: Context) {
     val installedCode: Int = info.versionCode
 
     /** Dernière version publiée (lève [Failure] avec un message lisible). */
-    fun latest(): Release {
+    fun latest(target: Edition = EditionStorage.edition): Release {
+        artifact = null
         val c = open(Releases.LATEST_URL, "application/vnd.github+json")
         try {
             when (val code = c.responseCode) {
@@ -45,8 +55,24 @@ class Updater(private val context: Context) {
                 403, 429 -> throw Failure(tr("GitHub limite les vérifications : réessayez dans une heure"))
                 else -> throw Failure(tr("GitHub a répondu %d", code))
             }
-            val text = c.inputStream.bufferedReader().use { it.readText() }
+            val text = readSmall(c, 1024 * 1024)
             val r = try { Releases.parse(text) } catch (e: IllegalArgumentException) { throw Failure(tr("Réponse GitHub illisible")) }
+            val assets = (Json.parse(text).obj()["assets"] as? List<*>).orEmpty()
+            val manifest = assets.map { it.obj() }.firstOrNull { it["name"] == "edition-manifest.json" }
+            if (manifest != null) {
+                val expected = Editions.manifestUrl(r.tag)
+                if (manifest["browser_download_url"] != expected) throw Failure(tr("Réponse GitHub illisible"))
+                val m = open(expected, "application/json")
+                try {
+                    if (m.responseCode != 200) throw Failure(tr("GitHub a répondu %d", m.responseCode))
+                    artifact = try { Editions.parse(readSmall(m, Editions.MAX_MANIFEST_BYTES), r).getValue(target) }
+                    catch (_: IllegalArgumentException) { throw Failure(tr("Réponse GitHub illisible")) }
+                } finally { m.disconnect() }
+                val a = artifact!!
+                return r.copy(apkName = a.name, apkUrl = a.url, apkSize = a.size)
+            }
+            if (target != Edition.FORK || EditionStorage.edition != Edition.FORK)
+                throw Failure(tr("Cette release ne propose pas encore les deux versions."))
             log.write("maj", "dernière version publiée : ${r.version} (installée : $installedVersion)")
             return r
         } catch (e: IOException) {
@@ -79,6 +105,7 @@ class Updater(private val context: Context) {
                         if (n < 0) break
                         out.write(buf, 0, n)
                         done += n
+                        if (done > Editions.MAX_APK_BYTES) throw Failure(tr("Le fichier téléchargé n'est pas une appli valide"))
                         if (total > 0) {
                             val pct = (done * 100 / total).toInt().coerceIn(0, 100)
                             if (pct != shown) { shown = pct; progress(pct) }
@@ -103,10 +130,30 @@ class Updater(private val context: Context) {
 
     @Suppress("DEPRECATION")
     private fun verify(file: File) {
-        val pi = context.packageManager.getPackageArchiveInfo(file.path, 0)
+        val flags = android.content.pm.PackageManager.GET_SIGNATURES or android.content.pm.PackageManager.GET_META_DATA
+        val pi = context.packageManager.getPackageArchiveInfo(file.path, flags)
         if (pi == null) { file.delete(); throw Failure(tr("Le fichier téléchargé n'est pas une appli valide")) }
         if (pi.packageName != context.packageName) { file.delete(); throw Failure(tr("Le fichier téléchargé n'est pas Toque")) }
-        if (pi.versionCode <= installedCode) { file.delete(); throw Failure(tr("Cette version n'est pas plus récente que celle installée")) }
+        val a = artifact
+        if (a != null) {
+            val hash = file.inputStream().use { input ->
+                val digest = MessageDigest.getInstance("SHA-256")
+                val buffer = ByteArray(32768)
+                while (true) { val n = input.read(buffer); if (n < 0) break; digest.update(buffer, 0, n) }
+                digest.digest().joinToString("") { "%02x".format(it.toInt() and 255) }
+            }
+            if (hash != a.sha256 || pi.versionCode != a.code || pi.versionName != a.version ||
+                pi.applicationInfo.metaData?.getString("app.toque.edition") != a.edition.key) {
+                file.delete(); throw Failure(tr("Le fichier téléchargé ne correspond pas à la version choisie."))
+            }
+            if (!Editions.canInstall(installedCode, a.code, EditionStorage.edition, a.edition, a.edition != EditionStorage.edition)) {
+                file.delete(); throw Failure(tr("Cette version n'est pas plus récente que celle installée"))
+            }
+        } else if (pi.versionCode <= installedCode) { file.delete(); throw Failure(tr("Cette version n'est pas plus récente que celle installée")) }
+        val current = context.packageManager.getPackageInfo(context.packageName, android.content.pm.PackageManager.GET_SIGNATURES)
+        if (pi.signatures?.toSet().isNullOrEmpty() || pi.signatures.toSet() != current.signatures.toSet()) {
+            file.delete(); throw Failure(tr("La signature de l'application téléchargée est incorrecte."))
+        }
     }
 
     /**
@@ -164,19 +211,26 @@ class Updater(private val context: Context) {
     }
 
     private fun open(url: String, accept: String): HttpURLConnection {
-        val c = URL(url).openConnection() as HttpURLConnection
-        c.connectTimeout = 15_000
-        c.readTimeout = 30_000
-        c.instanceFollowRedirects = true
-        c.setRequestProperty("User-Agent", "Toque/$installedVersion (Android)")
-        c.setRequestProperty("Accept", accept)
-        return c
+        return https.open(url, accept, installedVersion)
+    }
+
+    private fun readSmall(c: HttpURLConnection, limit: Int): String = c.inputStream.use { input ->
+        val out = ByteArrayOutputStream()
+        val buffer = ByteArray(8192)
+        while (true) {
+            val n = input.read(buffer); if (n < 0) break
+            if (out.size() + n > limit) throw Failure(tr("Réponse GitHub illisible"))
+            out.write(buffer, 0, n)
+        }
+        out.toString("UTF-8")
     }
 
     private fun network(e: IOException): Failure {
         log.write("maj", "réseau : $e")
+        log.crash("maj-réseau", e)
         return when (e) {
-            is SSLException -> Failure(tr("Connexion sécurisée à GitHub impossible. Vérifiez la date et l'heure du robot."))
+            is SSLException -> Failure(tr("Connexion sécurisée à GitHub impossible. Vérifiez la date et l'heure du robot.") + "\n" +
+                tr("Si l'horloge est correcte, consultez le journal : le certificat du serveur peut être incompatible."))
             else -> Failure(tr("Pas de connexion à GitHub. Vérifiez le Wi-Fi du robot."))
         }
     }

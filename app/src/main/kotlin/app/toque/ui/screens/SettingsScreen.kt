@@ -146,6 +146,7 @@ class SettingsScreen(a: MainActivity) : Screen(a) {
         updates.addView(updButtons, Ui.lp(t = 12))
         Updater.onInstallError = { msg -> updateFailed(msg) }
         renderUpdate()
+        updates.addView(link(tr("Version de l’application")) { a.push(EditionScreen(a)) }, Ui.lp(t = 12))
 
         // ---- Outils
         val tools = section(right, tr("Outils"), Icon.Kind.SETTINGS)
@@ -439,11 +440,20 @@ class SettingsScreen(a: MainActivity) : Screen(a) {
         }.start()
     }
 
+    // BEGIN MANAGED INSTALL: shared with the reference build; download before suspending the motor link.
+    private var updatePortSuspended = false
+
+    override fun canLeave(): Boolean = upd != Upd.DOWNLOADING && upd != Upd.INSTALLING
+
     /** Propose l'installation dans une fenêtre (toujours visible, même si la carte est hors écran). */
     private fun installUpdate() {
         val r = release ?: return
         if (a.snapshot.busy) {
             a.toast(tr("Arrêtez d'abord le programme en cours"), Ui.WARN)
+            return
+        }
+        if (a.prefs.guidedRecipe.isNotBlank()) {
+            a.toast(tr("Terminez la recette guidée avant de changer de version."), Ui.WARN)
             return
         }
         a.confirm(
@@ -453,34 +463,41 @@ class SettingsScreen(a: MainActivity) : Screen(a) {
                     "Le moteur reste arrêté pendant l'opération."),
             tr("Installer"), tr("Plus tard"), icon = Icon.Kind.SYNC,
         ) {
-            a.machine.suspendPort { v ->
-                if (!v.ok) { a.refusal(v); return@suspendPort }
-                upd = Upd.DOWNLOADING
-                updPercent = 0
-                renderUpdate()
-                Thread {
-                    try {
-                        val file = updater.download(r) { p -> view.post { updPercent = p; renderUpdate() } }
-                        view.post { upd = Upd.INSTALLING; renderUpdate() }
-                        updater.install(file)
-                    } catch (e: Updater.Failure) {
-                        view.post { updateFailed(e.message ?: tr("Erreur")) }
-                    } catch (e: Exception) {
-                        a.app.log.crash("maj", e)
-                        view.post { updateFailed(tr("Erreur inattendue : %s", e.message)) }
+            upd = Upd.DOWNLOADING
+            updPercent = 0
+            renderUpdate()
+            Thread {
+                try {
+                    val file = updater.download(r) { p -> view.post { updPercent = p; renderUpdate() } }
+                    view.post {
+                        if (a.snapshot.busy || a.prefs.guidedRecipe.isNotBlank()) {
+                            updateFailed(tr("Terminez la recette guidée avant de changer de version."))
+                        } else a.machine.suspendPort { verdict ->
+                            if (!verdict.ok) { updateFailed(verdict.message); return@suspendPort }
+                            updatePortSuspended = true
+                            upd = Upd.INSTALLING
+                            renderUpdate()
+                            Thread {
+                                try { updater.install(file) }
+                                catch (e: Exception) { view.post { updateFailed(e.message ?: tr("Erreur")) } }
+                            }.start()
+                        }
                     }
-                }.start()
-            }
+                } catch (e: Exception) {
+                    view.post { updateFailed(e.message ?: tr("Erreur")) }
+                }
+            }.start()
         }
     }
 
     private fun updateFailed(message: String) {
-        a.machine.resumePort()
+        if (updatePortSuspended) { a.machine.resumePort(); updatePortSuspended = false }
         upd = Upd.ERROR
         updMessage = message
         renderUpdate()
         a.toast(message, Ui.WARN)
     }
+    // END MANAGED INSTALL
 
     override fun onShow() {
         mode = a.prefs.mode
