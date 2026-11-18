@@ -55,6 +55,14 @@ android {
     }
 }
 
+// Fork release numbering is supplied by CI. Keep the upstream defaults above mergeable.
+if (providers.gradleProperty("forkVersionCode").isPresent) {
+    android.defaultConfig {
+        versionCode = providers.gradleProperty("forkVersionCode").get().toInt()
+        versionName = providers.gradleProperty("forkVersionName").get()
+    }
+}
+
 kotlin {
     compilerOptions { jvmTarget.set(JvmTarget.JVM_11) }
 }

@@ -1,0 +1,60 @@
+# Fork-only publishing. Upstream's release.yml stays untouched and is disabled on this fork
+# (gh workflow disable release.yml).
+name: Fork releases
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '17 * * * *'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: fork-releases
+  cancel-in-progress: false
+jobs:
+  release:
+    if: github.repository == 'maximehuran/MrCuisineVibeConnect' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Release workspace
+        run: echo "RELEASE_PLAN=$RUNNER_TEMP/fork-release/plan.json" >> "$GITHUB_ENV"
+      - name: Check stable upstream release and prepare local merge
+        id: prepare
+        run: python3 tools/fork/release.py prepare --plan "$RELEASE_PLAN"
+      - uses: actions/setup-java@v4
+        if: steps.prepare.outputs.publish == 'true'
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Fork release policy and SQLite migration tests
+        if: steps.prepare.outputs.publish == 'true'
+        run: |
+          python3 tools/test_fork_release.py
+          python3 tools/test_recipe_storage.py
+      - name: Unit tests and signed Android build
+        if: steps.prepare.outputs.publish == 'true'
+        env:
+          FORK_VERSION: ${{ steps.prepare.outputs.version }}
+          FORK_CODE: ${{ steps.prepare.outputs.code }}
+        run: ./gradlew --no-daemon :core:test :app:assembleRelease -PforkVersionName="$FORK_VERSION" -PforkVersionCode="$FORK_CODE"
+      - name: Verify APK, commit only the tested merge and publish
+        if: steps.prepare.outputs.publish == 'true'
+        run: python3 tools/fork/release.py publish --plan "$RELEASE_PLAN"
+      - uses: actions/upload-artifact@v4
+        if: always() && steps.prepare.outputs.publish == 'true'
+        with:
+          name: fork-unit-test-reports
+          path: core/build/reports/tests/test/
+      - name: Record failure without publishing a replacement
+        if: failure()
+        run: |
+          echo '## Fork update stopped' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Merge conflict, failed validation or publishing error: inspect this run. No untested APK is offered to the robot. Its installed app is unchanged.' >> "$GITHUB_STEP_SUMMARY"
