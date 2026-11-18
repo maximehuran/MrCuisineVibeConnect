@@ -1,3 +1,12 @@
+# Maxime's robot fork
+
+This fork retains personal features and integrates only **published stable releases** from Wuki60,
+after merging and testing. The robot checks this fork for app updates only when requested by its
+user; installation also requires confirmation. Recipes remain a separate configurable JSON source.
+See the [fork workflow and installation notes (French)](docs/FORK_WORKFLOW.fr.md).
+
+---
+
 # MrCuisineVibeConnect
 
 🇫🇷 **[Version française](README.fr.md)**
@@ -164,10 +173,3 @@ bowl, recipe sync, going back to the stock app.
 
 MIT License. This repository contains no Lidl recipes, images or code: each robot downloads the
 recipes itself from monsieur-cuisine.com, for its owner's personal use.
-# Maxime's robot fork
-
-This fork retains personal features and integrates only **published stable releases** from Wuki60,
-after merging and testing. The robot checks this fork for app updates only when requested by its
-user; installation also requires confirmation. Recipes remain a separate configurable JSON source.
-See the [fork workflow and installation notes (French)](docs/FORK_WORKFLOW.fr.md).
-
