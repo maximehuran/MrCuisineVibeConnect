@@ -38,6 +38,32 @@ class EditionSmoke : Instrumentation() {
             check(repo.get(id)?.favorite == true) { "Favorite did not survive in ${edition.key}" }
             check(prefs.getString("ci-edition-marker", "") == edition.key) { "Preferences crossed editions" }
             check(targetContext.getDatabasePath(edition.database).exists())
+            if (action == "standby") {
+                check(edition.key == "fork")
+                val minutes = prefs.getInt("standbyMinutes", 10)
+                val knob = prefs.getBoolean("standbyKnobLight", true)
+                prefs.edit().putInt("standbyMinutes", 2).putBoolean("standbyKnobLight", false).commit()
+                val activity = startActivitySync(android.content.Intent(targetContext, app.toque.ui.MainActivity::class.java)
+                    .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK))
+                try {
+                    runOnMainSync {
+                        // Reflection keeps this shared test APK loadable by the unmodified reference build.
+                        val standby = activity.javaClass.getDeclaredField("standby").apply { isAccessible = true }.get(activity)
+                        val type = standby.javaClass
+                        type.getDeclaredField("lastInputMs").apply { isAccessible = true }
+                            .setLong(standby, android.os.SystemClock.uptimeMillis() - 121_000L)
+                        check(type.getDeclaredMethod("shouldSleep").apply { isAccessible = true }.invoke(standby) == true)
+                        type.getDeclaredMethod("sleep").apply { isAccessible = true }.invoke(standby)
+                        check(type.getMethod("getAsleep").invoke(standby) == true)
+                        check(activity.window.attributes.screenBrightness == 0.02f)
+                        check(type.getMethod("onInput").invoke(standby) == true) // Wake gesture is consumed.
+                        check(type.getMethod("getAsleep").invoke(standby) == false)
+                    }
+                } finally {
+                    runOnMainSync { activity.finish() }
+                    prefs.edit().putInt("standbyMinutes", minutes).putBoolean("standbyKnobLight", knob).commit()
+                }
+            }
             if (action == "tls") {
                 val https = UpdateHttps(targetContext)
                 for (url in listOf("https://api.github.com/repos/Wuki60/MrCuisineVibeConnect/releases/latest",

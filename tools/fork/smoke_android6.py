@@ -43,6 +43,7 @@ if __name__ == "__main__":
     install(fork)
     test("fork", "check")
     test("fork", "tls")
+    test("fork", "standby")
     install(reference)
     test("reference", "check")
     install(fork)

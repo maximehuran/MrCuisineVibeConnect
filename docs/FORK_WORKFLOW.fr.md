@@ -96,3 +96,20 @@ sur le robot réel ; un test d’émulateur ne valide pas le fonctionnement phys
 
 Pour un retour à l’APK original Wuki60 0.5.1, distinct de la référence équipée du sélecteur, restaurer
 aussi les données d’avant le fork : sa base version 1 ne peut pas ouvrir la base version 2 du fork.
+
+## Options communautaires de l’édition Fork
+
+Les [PR nº 2](https://github.com/Wuki60/MrCuisineVibeConnect/pull/2) et
+[nº 4](https://github.com/Wuki60/MrCuisineVibeConnect/pull/4) de pierok13 sont reprises intégralement
+dans Fork Maxime, sans changer leurs valeurs par défaut. La référence conserve son code officiel.
+
+- **Sécurité → Inverser le capteur du bol** : désactivé par défaut. Vérifier l’indication bol en place
+  puis retiré avant de réactiver **Exiger la détection du bol**. Le verrouillage du couvercle reste actif.
+- **Écran → Mise en veille** : 10 minutes par défaut, ou Jamais / 2 / 5 / 10 / 15 / 30 minutes.
+  Écran noir avec heure mobile, rétroéclairage minimum et indication de bol chaud. Pas de veille
+  pendant un programme (pause et turbo compris) ou sur la balance. Le premier geste réveille sans
+  déclencher une action. La molette reste en veilleuse blanche faible et fixe par défaut.
+- Les listes déroulantes affichent immédiatement la nouvelle sélection, comme dans la PR nº 4.
+
+Les commits originaux conservent leur auteur ; leur intégration utilise `maxime.huran@gmail.com`
+comme adresse de commit. Ces options ne sont pas ajoutées à la PR indépendante des sources JSON.

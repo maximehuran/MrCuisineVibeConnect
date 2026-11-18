@@ -136,6 +136,17 @@ class ControllerTest {
         assertTrue(v.message, v.ok)
     }
 
+    @Test fun invertedBowlStillRefusesAnOpenLid() {
+        val b = Bench(ControllerConfig(requireBowl = true, invertBowl = true)).ready()
+        b.board.bowlPresent = false // Raw bit zero means present on an inverted base.
+        b.board.lidOpen = true
+        b.step(200)
+        assertTrue(b.snap.bowlDetected)
+        val verdict = b.c.startJob(Programs.manual(3, 0, Direction.CLOCKWISE, 5_000))
+        assertFalse(verdict.ok)
+        assertTrue(verdict.has("lid"))
+    }
+
     @Test fun lidOpeningPausesAndNothingRestartsAlone() {
         val b = Bench().ready()
         b.c.startJob(Programs.manual(3, 13, Direction.CLOCKWISE, 60_000))

@@ -195,6 +195,8 @@ def publish(plan_path):
     notes = plan_path.parent / "notes.md"
     notes.write_text(f"""Deux versions : **Fork Maxime** et **Référence Wuki60**. Sélecteur dans Réglages → Version de l’application.
 
+**Fork : capteur de bol inversable et veille de l’écran.** Reprise intégrale des PR [nº 2](https://github.com/Wuki60/MrCuisineVibeConnect/pull/2) et [nº 4](https://github.com/Wuki60/MrCuisineVibeConnect/pull/4). Inversion désactivée par défaut ; veille après 10 minutes, avec horloge sombre et veilleuse de la molette. Les réglages sont dans Sécurité et Écran. Le code de la référence reste celui de la release officielle, avec son sélecteur et ses fichiers séparés.
+
 Chaque version conserve ses propres recettes, favoris, préférences et images. La référence démarre avec un catalogue séparé à synchroniser depuis Réglages. Au premier lancement, seuls les réglages de machine, de sécurité et de langue sont repris du fork.
 
 La référence est construite depuis [{plan['upstream']['tag']}](https://github.com/{UPSTREAM}/releases/tag/{plan['upstream']['tag']}) avec uniquement le sélecteur, le mécanisme de distribution et des noms de fichiers distincts. Sa logique de favoris reste celle de Wuki60. La liste des fichiers adaptés figure dans fork-manifest.json.
