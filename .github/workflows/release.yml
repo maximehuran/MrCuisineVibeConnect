@@ -18,12 +18,13 @@ jobs:
     timeout-minutes: 25
     env:
       GH_TOKEN: ${{ github.token }}
-      RELEASE_PLAN: ${{ runner.temp }}/fork-release/plan.json
     steps:
       - uses: actions/checkout@v4
         with:
           ref: main
           fetch-depth: 0
+      - name: Release workspace
+        run: echo "RELEASE_PLAN=$RUNNER_TEMP/fork-release/plan.json" >> "$GITHUB_ENV"
       - name: Check stable upstream release and prepare local merge
         id: prepare
         run: python3 tools/fork/release.py prepare --plan "$RELEASE_PLAN"
