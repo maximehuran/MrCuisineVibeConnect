@@ -13,6 +13,7 @@ import app.toque.recipes.RecipeRepo
 import app.toque.recipes.JsonSourceSync
 import app.toque.ui.MainActivity
 import java.util.Locale
+import javax.net.ssl.HttpsURLConnection
 
 class ToqueApp : Application() {
     lateinit var prefs: Prefs
@@ -28,6 +29,12 @@ class ToqueApp : Application() {
         log = Logbook(this)
         LanguageFiles.install(this, log)
         I18n.select(I18n.resolve(prefs.language, Locale.getDefault().language).code)
+        // Racines récentes absentes d'Android 6 (voir ExtraRoots), pour toutes les connexions HTTPS.
+        try {
+            HttpsURLConnection.setDefaultSSLSocketFactory(ExtraRoots.socketFactory(this))
+        } catch (e: Exception) {
+            log.write("tls", "racines supplémentaires non chargées : $e")
+        }
         if (!isMainProcess()) return
         val previous = Thread.getDefaultUncaughtExceptionHandler()
         Thread.setDefaultUncaughtExceptionHandler { thread, error ->
