@@ -2,7 +2,7 @@ name: Tests
 on:
   pull_request:
   push:
-    branches: ['feat/**']
+    branches: ['feat/**', 'fork/**']
 permissions:
   contents: read
 concurrency:
@@ -19,6 +19,8 @@ jobs:
           java-version: '17'
       - name: SQLite migration and source isolation
         run: python3 tools/test_recipe_storage.py
+      - name: Fork release policy and merge behavior
+        run: python3 tools/test_fork_release.py
       - name: Unit tests and Android build
         run: ./gradlew --no-daemon :core:test :app:assembleRelease
       - uses: actions/upload-artifact@v4

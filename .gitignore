@@ -18,6 +18,8 @@ captures/
 # Système
 .DS_Store
 Thumbs.db
+__pycache__/
+*.pyc
 # Ne jamais publier de contenu Lidl (recettes, images, bases)
 /Recipes
 /Recipes-journal

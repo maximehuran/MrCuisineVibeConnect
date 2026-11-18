@@ -164,3 +164,10 @@ synchronisation des recettes, retour à l'appli d'origine.
 
 Licence MIT. Ce dépôt ne contient aucune recette, image ni code de Lidl : chaque robot télécharge
 lui-même les recettes sur monsieur-cuisine.com, pour l'usage personnel de son propriétaire.
+# Version pour le robot de Maxime
+
+Ce fork conserve les fonctionnalités personnelles et récupère uniquement les **releases officielles**
+de Wuki60 après fusion et tests. Sur le robot, la recherche et l'installation des mises à jour restent
+manuelles et consultent ce dépôt. Les recettes restent une source JSON séparée.
+Voir le [fonctionnement du fork et son installation](docs/FORK_WORKFLOW.fr.md).
+
