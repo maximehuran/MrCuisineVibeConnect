@@ -28,6 +28,7 @@ jobs:
         run: |
           echo "REFERENCE_BUILD_DIR=$RUNNER_TEMP/reference" >> "$GITHUB_ENV"
           python3 tools/fork/prepare_reference.py --directory "$RUNNER_TEMP/reference"
+          python3 tools/fork/test_reference.py --directory "$RUNNER_TEMP/reference"
       - name: Fork unit tests and APKs
         run: ./gradlew --no-daemon :core:test :app:assembleRelease :app:assembleAndroidTest -PforkVersionName=0.5.1.999 -PforkVersionCode=10999 -PtoqueEdition=fork
       - name: Reference unit tests and APK

@@ -2,7 +2,7 @@
 
 This fork retains personal features and integrates only **published stable releases** from Wuki60,
 after merging and testing. The robot checks this fork for app updates only when requested by its
-user; installation also requires confirmation. Recipes remain a separate configurable JSON source.
+user; installation also requires confirmation. Recipes remain a separate configurable JSON source. Both the fork and an upstream-reference edition include a selector, with independent catalogues and favorites.
 See the [fork workflow and installation notes (French)](docs/FORK_WORKFLOW.fr.md).
 
 ---

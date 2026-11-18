@@ -45,6 +45,7 @@ jobs:
         run: |
           sha=$(python3 -c 'import json,os; print(json.load(open(os.environ["RELEASE_PLAN"]))["upstream"]["sha"])')
           python3 tools/fork/prepare_reference.py --sha "$sha" --directory "$REFERENCE_BUILD_DIR"
+          python3 tools/fork/test_reference.py --directory "$REFERENCE_BUILD_DIR"
       - name: Unit tests and signed Android build
         if: steps.prepare.outputs.publish == 'true'
         env:

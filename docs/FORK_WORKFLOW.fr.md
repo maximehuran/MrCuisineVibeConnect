@@ -1,77 +1,98 @@
-# Le fork du robot de Maxime
+# Deux versions pour le robot de Maxime
 
-Ce dépôt fournit l'application du robot. Les recettes restent une source séparée dans
+Ce dépôt publie **Fork Maxime** et **Référence Wuki60**. Les recettes personnelles restent dans
 [monsieur-cuisine-recipes](https://github.com/maximehuran/monsieur-cuisine-recipes).
 
 ## Sur le robot
 
-Après l'installation initiale de l'APK du fork, **Réglages → Mises à jour → Rechercher une mise à jour**
-consulte uniquement les releases de `maximehuran/MrCuisineVibeConnect`. L'utilisateur confirme
-**Installer** ; Toque télécharge l'APK, l'installe et redémarre. Aucune recherche ni installation de
-l'application n'est programmée sur le robot. Les garde-fous d'installation du projet sont conservés.
+**Réglages → Version de l’application** indique la version utilisée et propose l’autre. Après
+confirmation, Toque télécharge l’APK, vérifie sa provenance, son empreinte, son édition, sa signature
+et son numéro, puis libère la liaison machine, installe et redémarre. Le changement est refusé pendant
+un programme ou une recette guidée. Une erreur de téléchargement ne suspend pas la liaison machine.
 
-Dans **Réglages → Sources de recettes JSON → Gérer les catalogues personnels**, ajouter une source
-et l'adresse suivante, puis synchroniser :
+Le sélecteur existe dans les deux versions. Les deux APK portent le même paquet `app.toque`, la même
+signature et le même numéro de compilation. Le changement d’édition à numéro égal est explicitement
+autorisé ; les anciennes compilations restent refusées. Une seule application fonctionne à la fois.
+
+La recherche de mises à jour reste **manuelle**, dans **Réglages → Mises à jour**. Les deux versions
+consultent ce dépôt. La référence suit uniquement les vraies releases officielles de Wuki60 ; elle
+conserve une petite adaptation pour le sélecteur et la distribution. Il ne s’agit pas de l’APK original
+inchangé de Wuki60 : installer cet APK original ferait disparaître le sélecteur.
+
+## Données indépendantes
+
+| Données | Fork | Référence |
+|---|---|---|
+| Recettes et favoris | `recettes.db` existant | `recettes-reference.db` |
+| Préférences | `toque` existant | `toque-reference` |
+| Images | `files/images` existant | `files/images-reference` |
+
+Aucun fichier du fork n’est renommé, converti ou effacé pendant un changement. Chaque version retrouve
+son propre catalogue, ses favoris et ses préférences. Les favoris ne passent pas d’une version à l’autre.
+Au premier lancement de la référence, seuls les réglages de machine, de sécurité, de langue et
+quelques réglages matériels sont copiés du fork. Les recettes, sources JSON, synchronisations et
+reprises de cuisson ne sont pas copiées. Le catalogue de référence est initialement vide : utiliser
+**Réglages → Recettes Lidl → Synchroniser** pour le remplir. Les deux schémas peuvent évoluer séparément.
+
+Pour comparer les favoris, utiliser la même recette Lidl, ajouter un favori, ouvrir la liste, puis
+redémarrer. Le code de favoris de la référence est conservé exactement depuis sa release officielle ;
+seuls les noms de fichiers sont adaptés dans son dépôt de recettes.
+
+Les sources JSON du fork restent configurables. Exemple :
 
 ```text
 https://api.github.com/repos/maximehuran/monsieur-cuisine-recipes/contents/catalog.json
 ```
 
-La synchronisation automatique des recettes est indépendante des mises à jour de l'application.
-Le premier essai de la fiche « Prélavage » porte sur l'import et l'affichage, sans lancer le moteur.
+Le premier essai de « Prélavage » porte sur l’import et l’affichage. Aucune synchronisation ne lance
+les lames ni la chauffe.
 
-## Récupérer les évolutions officielles
+## Publication et suivi de Wuki60
 
-L'action **Fork releases** s'exécute à la minute 17 de chaque heure, lors d'un ajout à `main`, ou
-manuellement depuis GitHub Actions. Elle interroge la dernière release officielle publiée de
-`Wuki60/MrCuisineVibeConnect` et refuse les brouillons, préversions et releases sans APK. Elle
-récupère exactement le commit du tag publié, jamais la tête non publiée de `upstream/main`.
+L’action **Fork releases**, à la minute 17 de chaque heure ou sur demande, récupère exactement le tag
+numérique de la dernière release officielle publiée, jamais les modifications non publiées de `main`.
+Elle refuse les brouillons, préversions et releases sans APK. Elle prépare une fusion locale, conserve
+les fonctionnalités du fork et prépare la référence depuis le tag officiel avec une liste contrôlée
+de fichiers de distribution. Un audit vérifie que sa logique de recettes/favoris est restée inchangée.
 
-1. Préparer la fusion avec le fork dans le dossier temporaire du runner, sans pousser.
-2. Vérifier que la base officielle avance et que le dépôt des mises à jour reste celui du fork.
-3. Exécuter les tests du fork, de migration SQLite et du cœur de Toque ; compiler l'APK.
-4. Vérifier la signature existante, le paquet `app.toque`, les numéros de version et l'adresse de
-   mise à jour réellement compilée dans l'APK.
-5. Pousser la fusion testée et son tag ensemble, sans forcer, puis publier l'APK avec son empreinte
-   et son manifeste de provenance. L'APK devient visible dans les mises à jour après publication.
+Les deux versions passent leurs tests et leur compilation. Un émulateur Android 6 vérifie le passage
+fork → référence → fork, la persistance des favoris/préférences et les connexions HTTPS GitHub. Les APK
+sont ensuite vérifiés et publiés. Aucun conflit ou échec de validation ne doit diffuser une nouvelle
+paire. Une modification concurrente de `main` annule la publication ; aucun push n’est forcé.
 
-Un conflit, un échec de test ou une vérification incorrecte interrompt le travail. Aucune nouvelle
-application non validée n'est proposée au robot. Une modification concurrente de `main` annule la
-publication : le prochain passage repart de sa nouvelle version. Une panne de publication après
-la poussée du tag peut laisser un tag ou brouillon sans release complète ; le prochain passage
-réessaie avec un numéro neuf. Les numéros abandonnés ne sont jamais réutilisés.
+Les numéros suivent `version-officielle.compteur`, par exemple `0.5.1.3`, et le code Android vaut
+`10000 + compteur`. Les numéros réservés par un échec ne sont jamais réutilisés. Sans changement de
+sources, il n’y a pas de nouvelle compilation ou release.
 
-Si rien n'a changé depuis le dernier APK publié, il n'y a ni compilation ni nouvelle release.
-Le manifeste de chaque release contient la base officielle, le commit du fork, son arbre source,
-sa version Android, l'empreinte de l'APK et le lien vers la compilation. Il ne certifie pas un test
-physique sur le robot : les tests automatiques ne remplacent pas cette validation.
+La release normale contient uniquement l’APK du fork : les anciennes versions choisissent le premier
+APK et doivent continuer à recevoir le fork. L’APK de référence est publié dans `reference-v…`, une
+release de distribution marquée préversion pour rester exclue du flux « latest ». `edition-manifest.json`
+relie les deux APK vérifiés ; le sélecteur le lit automatiquement. `fork-manifest.json` conserve les
+commits, empreintes et adaptations de la référence. Le marquage de distribution n’affecte pas le choix
+de sa base : celle-ci reste une vraie release officielle stable.
 
-## Numérotation et contributions
+Les branches `feat/...` destinées à Wuki60 restent séparées des réglages propres à ce dépôt. La PR JSON
+nº 16 ne contient pas le sélecteur. Les commits et fusions utilisent `maxime.huran@gmail.com`.
 
-Les versions du fork suivent `version-officielle.compteur`, par exemple `0.5.1.1`, `0.5.1.2`, puis
-`0.5.2.3`. Le compteur est global et ne redescend jamais ; le `versionCode` Android vaut
-`10000 + compteur`. Ces valeurs sont fournies à Gradle lors de la compilation, en conservant les
-valeurs de base officielles dans les sources. Chaque release porte le même tag que la version APK.
+GitHub peut retarder une action programmée ou la désactiver après 60 jours sans activité. L’onglet
+Actions permet de vérifier son état, la réactiver et lancer **Run workflow**.
 
-`main` contient les fonctionnalités utilisées sur le robot et les réglages de ce fork. Une branche
-`feat/...` destinée à une PR chez Wuki60 part de la base officielle et ne contient que sa fonctionnalité.
-La PR JSON nº 16 reste indépendante du présent réglage des mises à jour. Les nouveautés sont
-intégrées à `main` après validation ; lorsqu'elles arrivent dans une release officielle, on vérifie
-la fusion et on retire les adaptations devenues redondantes si nécessaire. Ne jamais utiliser une
-synchronisation qui réinitialise `main` sur Wuki60 : elle effacerait les fonctionnalités du fork.
+## HTTPS Android 6 et installation initiale
 
-Les commits humains et les fusions automatiques utilisent `maxime.huran@gmail.com`.
-Les licences originales et la signature de l'application sont conservées.
+Le mécanisme de mise à jour ajoute à la confiance système les racines publiques **Sectigo E46** et
+**ISRG Root X1**, limitées aux connexions de mise à jour. Les certificats, leurs dates, les noms des
+serveurs et les signatures APK restent vérifiés. Les redirections doivent rester HTTPS. Aucun
+certificat n’est installé dans Android et aucune vérification TLS n’est désactivée.
 
-## Installation initiale et retour arrière
+Sources et empreintes :
 
-Sauvegarder les données de Toque **avant** l'installation initiale : la base de recettes passe de
-la version 1 à la version 2. Une sauvegarde des partitions boot/recovery ne remplace pas cette
-sauvegarde applicative. Une réinstallation de Toque 0.5.1 seule ne peut pas relire cette nouvelle
-base ; restaurer aussi les données antérieures pour revenir à cette version.
+- [Racines Sectigo](https://www.sectigo.com/knowledge-base/detail/Sectigo-Public-Intermediates-and-Roots), E46 SHA-256 `c90f26f0fb1b4018b22227519b5ca2b53e2ca5b3be5cf18efe1bef47380c5383`.
+- [ISRG Root X1](https://letsencrypt.org/certificates/), SHA-256 `96bcec06264976f37460779acf28c5a7ccfe8a3c0aae11a8ffcee05c0bddf08c6`.
 
-Les vérifications horaires dépendent de GitHub Actions et peuvent être retardées. GitHub peut
-désactiver une action programmée après 60 jours sans activité du dépôt. Consulter l'onglet Actions
-en cas d'absence prolongée de nouvelles versions ; réactiver puis lancer **Fork releases** si besoin.
-Une synchronisation à la demande reste disponible via **Run workflow**. Le robot reste utilisable
-avec son application installée et ses recettes en cache pendant une indisponibilité de GitHub.
+Une ancienne version incapable de télécharger via HTTPS doit recevoir une première fois le nouvel
+APK depuis le Mac, avec sauvegarde préalable des données et de l’APK installé. Ensuite les mises
+à jour et changements d’édition passent par le Wi-Fi. Cette compilation doit encore être essayée
+sur le robot réel ; un test d’émulateur ne valide pas le fonctionnement physique du moteur.
+
+Pour un retour à l’APK original Wuki60 0.5.1, distinct de la référence équipée du sélecteur, restaurer
+aussi les données d’avant le fork : sa base version 1 ne peut pas ouvrir la base version 2 du fork.

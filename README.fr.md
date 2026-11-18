@@ -2,7 +2,7 @@
 
 Ce fork conserve les fonctionnalités personnelles et récupère uniquement les **releases officielles**
 de Wuki60 après fusion et tests. Sur le robot, la recherche et l'installation des mises à jour restent
-manuelles et consultent ce dépôt. Les recettes restent une source JSON séparée.
+manuelles et consultent ce dépôt. Les recettes restent une source JSON séparée. Un sélecteur permet de passer du fork à une référence Wuki60, avec recettes et favoris indépendants.
 Voir le [fonctionnement du fork et son installation](docs/FORK_WORKFLOW.fr.md).
 
 ---

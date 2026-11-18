@@ -37,9 +37,12 @@ class EditionSmoke : Instrumentation() {
                 val https = UpdateHttps(targetContext)
                 for (url in listOf("https://api.github.com/repos/Wuki60/MrCuisineVibeConnect/releases/latest",
                     "https://github.com/Wuki60/MrCuisineVibeConnect/releases/download/v0.5.1/Toque-0.5.1.apk")) {
-                    val c = https.open(url, "application/octet-stream", "ci")
+                    val api = url.startsWith("https://api.github.com/")
+                    val c = https.open(url, if (api) "application/vnd.github+json" else "application/octet-stream", "ci")
                     try {
-                        check(c.responseCode == 200)
+                        val code = c.responseCode
+                        check(code == 200 || (api && code in listOf(403, 429))) { "HTTPS returned $code from $url" }
+                        if (code != 200) continue // Shared CI IP rate limiting does not invalidate a successful TLS handshake.
                         c.inputStream.use { input ->
                             val buffer = ByteArray(8192)
                             while (input.read(buffer) >= 0) { /* Validate a complete HTTPS response. */ }

@@ -115,6 +115,48 @@ class GitIntegrationTest(unittest.TestCase):
                                  for c in commands.call_args_list))
         self.assertEqual("", self.git("tag", "--list"))
 
+    def pair_fixture(self):
+        for directory in [Path("app/build/outputs/apk/release"), Path("reference/app/build/outputs/apk/release")]:
+            directory.mkdir(parents=True, exist_ok=True)
+            (directory / "app-release.apk").write_bytes(b"fixture apk")
+        Path("reference-provenance.json").write_text(json.dumps({"upstream_sha": self.base, "changed_files": {}}))
+        plan = {"publish": True, "repository": release.FORK, "tag": "v0.5.1.3", "version_name": "0.5.1.3",
+                "version_code": 10003, "source_commit": self.base, "initial_commit": self.base,
+                "upstream": {"tag": "v0.5.1"}, "workflow_run": "https://example.invalid/run"}
+        Path("plan.json").write_text(json.dumps(plan))
+        return Path("plan.json")
+
+    def test_invalid_reference_apk_cannot_publish_a_half_valid_pair(self):
+        plan = self.pair_fixture()
+        with patch.dict(os.environ, GITHUB_REPOSITORY=release.FORK, GITHUB_REF="refs/heads/main",
+                        REFERENCE_BUILD_DIR="reference"), \
+                patch.object(release, "verify_apk", side_effect=[None, ValueError("bad reference")]), \
+                patch.object(release, "run", wraps=release.run) as commands:
+            with self.assertRaisesRegex(ValueError, "bad reference"):
+                release.publish(plan)
+            self.assertFalse(any(c.args[:2] in [("git", "push"), ("git", "tag"), ("gh", "release")]
+                                 for c in commands.call_args_list))
+
+    def test_reference_upload_failure_does_not_advertise_a_new_stable_release(self):
+        plan = self.pair_fixture()
+        def local_git(*args):
+            if args[0] == "rev-parse": return self.base
+            if args[0] == "ls-remote": return self.base + "\trefs/heads/main"
+            return ""
+        with patch.dict(os.environ, GITHUB_REPOSITORY=release.FORK, GITHUB_REF="refs/heads/main",
+                        REFERENCE_BUILD_DIR="reference"), \
+                patch.object(release, "git", side_effect=local_git), \
+                patch.object(release, "verify_apk"), \
+                patch.object(release, "run", side_effect=RuntimeError("reference upload failed")) as commands:
+            with self.assertRaisesRegex(RuntimeError, "reference upload failed"):
+                release.publish(plan)
+            self.assertEqual(1, commands.call_count)
+            self.assertEqual(("gh", "release", "create", "reference-v0.5.1.3"), commands.call_args.args[:4])
+        manifest = json.loads(Path("edition-manifest.json").read_text())
+        self.assertEqual(10003, manifest["version_code"])
+        self.assertEqual({"fork", "reference"}, set(manifest["editions"]))
+        self.assertNotEqual(manifest["editions"]["fork"]["url"], manifest["editions"]["reference"]["url"])
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
