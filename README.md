@@ -70,7 +70,7 @@ Allow 1 to 2 hours. Without an agent: [docs/INSTALLATION.md](docs/INSTALLATION.m
 - **Made for a robot without Android buttons**: Toque opens at startup, and a **Back to Toque**
   button stays on top of the stock app when you open it.
 - **Updates from GitHub**: *Settings › Updates* checks this repository's
-  [Releases](https://github.com/Wuki60/MrCuisineVibeConnect/releases) and installs the new version
+  [Releases](https://github.com/maximehuran/MrCuisineVibeConnect/releases) and installs the new version
   (silently on a rooted robot, then Toque restarts). Refused while a program is running.
 
 ## Safety: what changes compared to the stock app
