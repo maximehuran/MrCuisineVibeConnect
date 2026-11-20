@@ -104,6 +104,19 @@ class Prefs(context: Context) {
             p.edit().putInt("standbyMinutes", v).commit()
         }
 
+    /** Couper le Wi-Fi en veille, sauf pendant les transferts et la vérification nocturne. */
+    var standbyWifiOff: Boolean
+        get() = p.getBoolean("standbyWifiOff", true)
+        set(v) { p.edit().putBoolean("standbyWifiOff", v).commit() }
+
+    // Persist ownership so a reboot/process restart can undo only Toque's own Wi-Fi cuts.
+    var wifiStandby: Boolean
+        get() = p.getBoolean("wifiStandby", false)
+        set(v) { p.edit().putBoolean("wifiStandby", v).commit() }
+    var wifiOwned: Boolean
+        get() = p.getBoolean("wifiOwned", false)
+        set(v) { p.edit().putBoolean("wifiOwned", v).commit() }
+
     /**
      * Molette pendant la veille : « normal » (inchangée), « dim » (veilleuse blanche faible) ou
      * « off » (éteinte). Reprend l'ancien interrupteur « standbyKnobLight » s'il a été réglé.
@@ -161,6 +174,8 @@ class Prefs(context: Context) {
             p.edit().putString("jsonRecipeSources", JsonRecipeSource.encode(v)).commit()
         }
 
+    fun jsonSourceLastAttempt(id: String): Long = p.getLong("jsonSource.$id.lastAttempt", 0)
+    fun jsonSourceAttempt(id: String) { p.edit().putLong("jsonSource.$id.lastAttempt", System.currentTimeMillis()).commit() }
     fun jsonSourceLastSync(id: String): Long = p.getLong("jsonSource.$id.lastSync", 0)
     fun jsonSourceResult(id: String): String = p.getString("jsonSource.$id.result", "") ?: ""
     fun jsonSourceEtag(id: String): String = p.getString("jsonSource.$id.etag", "") ?: ""
@@ -171,7 +186,7 @@ class Prefs(context: Context) {
         e.commit()
     }
     fun clearJsonSourceStatus(id: String) {
-        p.edit().remove("jsonSource.$id.lastSync").remove("jsonSource.$id.result").remove("jsonSource.$id.etag").commit()
+        p.edit().remove("jsonSource.$id.lastAttempt").remove("jsonSource.$id.lastSync").remove("jsonSource.$id.result").remove("jsonSource.$id.etag").commit()
     }
 
     /** Bouton « Retour à Toque » à afficher : Toque a ouvert une autre appli (robot sans bouton Accueil). */

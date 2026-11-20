@@ -5,6 +5,7 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import app.toque.Logbook
 import app.toque.Prefs
+import app.toque.ToqueApp
 import app.toque.core.i18n.I18n
 import app.toque.core.i18n.tr
 import app.toque.core.json.Json
@@ -39,7 +40,7 @@ class OnlineSync(private val context: Context, private val prefs: Prefs, private
     fun sync(progress: (String) -> Unit = {}): LidlSync.Report {
         if (!running.compareAndSet(false, true)) return LidlSync.Report(false, tr("Synchronisation déjà en cours"))
         try {
-            return finish(run(progress))
+            return ToqueApp.of(context).wifi.withNetwork { finish(run(progress)) }
         } catch (e: Exception) {
             log.crash("synchro", e)
             return finish(LidlSync.Report(false, tr("Synchronisation impossible : %s", e.message ?: e.toString())))
@@ -183,6 +184,7 @@ class OnlineSync(private val context: Context, private val prefs: Prefs, private
     private fun download(url: String, headers: Map<String, String>, maxBytes: Int): ByteArray {
         var attempt = 0
         while (true) {
+            if (Thread.currentThread().isInterrupted) throw IOException(tr("Synchronisation interrompue."))
             attempt++
             val c = URL(url).openConnection() as HttpURLConnection
             try {
@@ -200,6 +202,7 @@ class OnlineSync(private val context: Context, private val prefs: Prefs, private
                     val out = ByteArrayOutputStream()
                     val buf = ByteArray(16 * 1024)
                     while (true) {
+                        if (Thread.currentThread().isInterrupted) throw IOException(tr("Synchronisation interrompue."))
                         val n = input.read(buf)
                         if (n < 0) break
                         out.write(buf, 0, n)
@@ -233,7 +236,7 @@ class OnlineSync(private val context: Context, private val prefs: Prefs, private
 
     private fun finish(r: LidlSync.Report): LidlSync.Report {
         val stamp = SimpleDateFormat(tr("dd/MM à HH:mm"), I18n.locale).format(Date())
-        prefs.lastSyncMs = System.currentTimeMillis()
+        if (r.ok) prefs.lastSyncMs = System.currentTimeMillis()
         prefs.lastSyncResult = "$stamp : ${r.message}"
         log.write("synchro", r.message)
         return r
@@ -243,6 +246,8 @@ class OnlineSync(private val context: Context, private val prefs: Prefs, private
         try {
             Thread.sleep(ms)
         } catch (_: InterruptedException) {
+            Thread.currentThread().interrupt()
+            throw IOException(tr("Synchronisation interrompue."))
         }
     }
 

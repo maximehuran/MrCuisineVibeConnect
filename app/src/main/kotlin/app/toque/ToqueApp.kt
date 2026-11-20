@@ -10,7 +10,7 @@ import android.os.Process
 import app.toque.core.i18n.I18n
 import app.toque.machine.MachineClient
 import app.toque.recipes.RecipeRepo
-import app.toque.recipes.JsonSourceSync
+import app.toque.recipes.SyncService
 import app.toque.ui.MainActivity
 import java.util.Locale
 import javax.net.ssl.HttpsURLConnection
@@ -21,6 +21,7 @@ class ToqueApp : Application() {
     lateinit var log: Logbook
         private set
     val machine: MachineClient by lazy { MachineClient(this) }
+    val wifi: WifiController by lazy { WifiController(this) }
     val recipes: RecipeRepo by lazy { RecipeRepo(this) }
 
     override fun onCreate() {
@@ -55,8 +56,9 @@ class ToqueApp : Application() {
             }
         }
         log.write("interface", "démarrage")
+        wifi.start()
         TimeSync.start(this, prefs, log)
-        JsonSourceSync.start(this)
+        SyncService.startScheduler(this)
     }
 
     private fun isMainProcess(): Boolean {

@@ -12,7 +12,7 @@ class Icon(context: Context, var kind: Kind, color: Int) : View(context) {
     enum class Kind {
         BACK, SEARCH, PLAY, PAUSE, STOP, THERMO, SPEED, CLOCK, REVERSE, SCALE, BOOK, STAR, STAR_FILLED,
         SETTINGS, PLUS, MINUS, CHECK, CLOSE, KNEAD, STEAM, FLAME, BOLT, SYNC, LID, WARNING, HOME, WHISK,
-        CHEVRON, LINK, INFO, POT, TIMER,
+        CHEVRON, LINK, INFO, POT, TIMER, WIFI, WIFI_OFF,
     }
 
     var color: Int = color
@@ -145,6 +145,12 @@ class Icon(context: Context, var kind: Kind, color: Int) : View(context) {
                 canvas.drawLine(12f, 21.5f, 12f, 15f, stroke)
                 rect.set(7f, 2.5f, 17f, 16f); canvas.drawOval(rect, stroke)
                 rect.set(9.5f, 2.5f, 14.5f, 16f); canvas.drawOval(rect, stroke)
+            }
+            Kind.WIFI, Kind.WIFI_OFF -> {
+                rect.set(1f, 5f, 23f, 27f); canvas.drawArc(rect, 225f, 90f, false, stroke)
+                rect.set(5f, 9f, 19f, 23f); canvas.drawArc(rect, 225f, 90f, false, stroke)
+                canvas.drawCircle(12f, 18f, 1.5f, fill)
+                if (kind == Kind.WIFI_OFF) canvas.drawLine(3f, 3f, 21f, 21f, stroke)
             }
             Kind.LINK -> { canvas.drawCircle(12f, 12f, 4f, fill); canvas.drawCircle(12f, 12f, 8.5f, stroke) }
             Kind.INFO -> { canvas.drawCircle(12f, 12f, 9f, stroke); canvas.drawLine(12f, 11f, 12f, 16.5f, stroke); canvas.drawCircle(12f, 7.8f, 1.2f, fill) }

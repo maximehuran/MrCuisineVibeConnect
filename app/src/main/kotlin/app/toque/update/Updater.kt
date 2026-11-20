@@ -38,7 +38,9 @@ class Updater(private val context: Context) {
     val installedCode: Int = info.versionCode
 
     /** Dernière version publiée (lève [Failure] avec un message lisible). */
-    fun latest(): Release {
+    fun latest(): Release = ToqueApp.of(context).wifi.withNetwork { latestConnected() }
+
+    private fun latestConnected(): Release {
         val c = open(Releases.LATEST_URL, "application/vnd.github+json")
         try {
             when (val code = c.responseCode) {
@@ -61,7 +63,10 @@ class Updater(private val context: Context) {
     fun isNewer(r: Release): Boolean = Releases.isNewer(r.version, installedVersion)
 
     /** Télécharge l'APK de la version et vérifie qu'il s'agit bien d'une version plus récente de Toque. */
-    fun download(r: Release, progress: (Int) -> Unit): File {
+    fun download(r: Release, progress: (Int) -> Unit): File =
+        ToqueApp.of(context).wifi.withNetwork { downloadConnected(r, progress) }
+
+    private fun downloadConnected(r: Release, progress: (Int) -> Unit): File {
         val url = r.apkUrl ?: throw Failure(tr("Cette version ne contient pas d'appli à installer"))
         val dir = File(context.cacheDir, "maj")
         dir.mkdirs()

@@ -51,6 +51,7 @@ class Standby(private val a: MainActivity, private val root: FrameLayout) {
     fun start() {
         if (running) return
         running = true
+        a.app.wifi.standby(false)
         lastInputMs = SystemClock.uptimeMillis()
         main.postDelayed(check, 10_000)
     }
@@ -118,6 +119,7 @@ class Standby(private val a: MainActivity, private val root: FrameLayout) {
         refresh()
         v.alpha = 0f
         v.animate().alpha(1f).setDuration(800).start()
+        a.app.wifi.standby(true)
         brightness(0.02f)
         when (a.prefs.standbyKnob) {
             "dim" -> KnobLight.start(KnobLight.NIGHT_LEVEL)
@@ -128,6 +130,7 @@ class Standby(private val a: MainActivity, private val root: FrameLayout) {
 
     private fun wake() {
         val v = view ?: return
+        a.app.wifi.standby(false)
         main.removeCallbacks(tick)
         v.animate().cancel()
         root.removeView(v)

@@ -8,7 +8,7 @@ Open **Settings → Recipes → Recipe sources**. Add a name and an HTTPS catalo
 
 There are no external sources configured by default. Public catalogues need no account or GitHub token. This first version supports up to 20 sources, 500 recipes and 2 MiB per catalogue. Authentication and downloading custom recipe photos are outside this change. The catalogue host must use a certificate trusted by the device; TLS verification is never bypassed.
 
-Automatic synchronization checks each source at startup and daily while Toque is running, online and idle. Applying a catalogue or removing a source waits until any guided recipe has ended, including paused cooking. Failed downloads and invalid catalogues keep the previous data. ETags avoid importing an unchanged catalogue again.
+Automatic synchronization checks each enabled source at startup and once per local calendar day while Toque is online and idle. The shared nightly window around 03:30 checks personal sources before Lidl, temporarily restoring Wi-Fi if Toque disabled it for standby. The last successful check advances after both HTTP 200 and 304 (unchanged); failed attempts are shown separately and retain the previous successful date. Applying a catalogue or removing a source waits until any guided recipe has ended, including paused cooking. Failed downloads and invalid catalogues keep the previous data. ETags avoid importing an unchanged catalogue again.
 
 Removing a source deletes only that source's non-favorite recipes. Favorites remain available offline. Likewise, a favorited recipe withdrawn from its catalogue is retained locally. Turn automatic synchronization off instead of removing a source if you want to keep its configuration for later.
 
