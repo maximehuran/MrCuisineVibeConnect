@@ -41,6 +41,17 @@ class JsonCatalogHttpTest {
         assertEquals("\"v1\"", c.getRequestProperty("If-None-Match"))
         refused { JsonCatalogHttp { Connection(it, 304) }.fetch(source) }
     }
+    @Test fun unchangedCatalogueStillHasANewSuccessfulCheckDate() {
+        var now = 1_800_000_000_000L
+        val client = JsonCatalogHttp(clock = { now }, connect = { Connection(it, 304) })
+        val first = client.fetch(source, "\"v1\"")
+        now += 86_400_000L
+        val second = client.fetch(source, "\"v1\"")
+        assertNull(second.text)
+        assertEquals(first.etag, second.etag)
+        assertTrue(second.checkedAt > first.checkedAt)
+        assertEquals(now, second.checkedAt)
+    }
     @Test fun redirectsCannotDowngradeOrLoopForever() {
         var count = 0
         refused { JsonCatalogHttp { count++; Connection(it, 302, headers = mapOf("Location" to "http://example.org/insecure")) }.fetch(source) }

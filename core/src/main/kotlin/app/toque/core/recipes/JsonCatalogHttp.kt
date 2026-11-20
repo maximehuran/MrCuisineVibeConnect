@@ -7,12 +7,15 @@ import java.net.HttpURLConnection
 import java.net.URL
 
 /** Public HTTPS data only. Redirects never relax certificate checks or downgrade to HTTP. */
-class JsonCatalogHttp(private val connect: (URL) -> HttpURLConnection = { it.openConnection() as HttpURLConnection }) {
-    data class Response(val text: String?, val etag: String)
+class JsonCatalogHttp(private val clock: () -> Long = { System.currentTimeMillis() }, private val connect: (URL) -> HttpURLConnection = { it.openConnection() as HttpURLConnection }) {
+    data class Response(val text: String?, val etag: String, val checkedAt: Long)
 
     fun fetch(source: JsonRecipeSource, etag: String = ""): Response {
+        val deadline = System.nanoTime() + 90_000_000_000L
+        fun checkDeadline() { if (System.nanoTime() > deadline || Thread.currentThread().isInterrupted) throw IOException(tr("Vérification du catalogue interrompue ou trop longue.")) }
         var url = URL(source.url)
         repeat(5) {
+            checkDeadline()
             if (!JsonRecipeSource.isHttpsUrl(url.toString())) throw IOException(tr("La source doit rester en HTTPS."))
             val c = connect(url)
             try {
@@ -30,7 +33,7 @@ class JsonCatalogHttp(private val connect: (URL) -> HttpURLConnection = { it.ope
                     }
                     304 -> {
                         if (etag.isEmpty()) throw IOException(tr("Le serveur a répondu %d.", code))
-                        return Response(null, etag)
+                        return Response(null, etag, clock())
                     }
                     200 -> {
                         if (c.contentLength > JsonRecipeCatalog.MAX_BYTES) throw IOException(tr("Catalogue trop volumineux (2 Mio maximum)."))
@@ -38,6 +41,7 @@ class JsonCatalogHttp(private val connect: (URL) -> HttpURLConnection = { it.ope
                             val out = ByteArrayOutputStream()
                             val buffer = ByteArray(8192)
                             while (true) {
+                                checkDeadline()
                                 val n = input.read(buffer)
                                 if (n < 0) break
                                 if (out.size() + n > JsonRecipeCatalog.MAX_BYTES) throw IOException(tr("Catalogue trop volumineux (2 Mio maximum)."))
@@ -46,7 +50,7 @@ class JsonCatalogHttp(private val connect: (URL) -> HttpURLConnection = { it.ope
                             out.toByteArray()
                         }
                         val nextTag = c.getHeaderField("ETag")?.takeIf { tag -> tag.length <= 512 && '\r' !in tag && '\n' !in tag }.orEmpty()
-                        return Response(String(bytes, Charsets.UTF_8), nextTag)
+                        return Response(String(bytes, Charsets.UTF_8), nextTag, clock())
                     }
                     else -> throw IOException(tr("Le serveur a répondu %d.", code))
                 }

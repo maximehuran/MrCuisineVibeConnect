@@ -43,6 +43,8 @@ class TopBar(private val a: MainActivity) : LinearLayout(a) {
     private val temp = Ui.chip(a, "", Icon.Kind.THERMO, Ui.TEXT2)
     private val lid = Ui.chip(a, tr("Couvercle ouvert"), Icon.Kind.LID, Ui.WARN, 0x33FFC14D)
     private val link = Ui.chip(a, "", Icon.Kind.LINK, Ui.TEXT2)
+    private val wifi = Ui.chip(a, "", Icon.Kind.WIFI, Ui.TEXT2)
+    private var stopWifi: (() -> Unit)? = null
     private val clock = Ui.text(a, "", 22f, Ui.TEXT, Ui.LIGHT)
     private val home = Icon(a, Icon.Kind.HOME, Ui.TEXT2)
     private val handler = Handler(Looper.getMainLooper())
@@ -67,7 +69,9 @@ class TopBar(private val a: MainActivity) : LinearLayout(a) {
         addView(titleView, LayoutParams(0, Ui.WRAP, 1f).apply { leftMargin = Ui.u(6) })
         addView(lid, Ui.lp(Ui.WRAP, Ui.WRAP, r = 10))
         addView(temp, Ui.lp(Ui.WRAP, Ui.WRAP, r = 10))
-        addView(link, Ui.lp(Ui.WRAP, Ui.WRAP, r = 16))
+        addView(link, Ui.lp(Ui.WRAP, Ui.WRAP, r = 10))
+        addView(wifi, Ui.lp(Ui.WRAP, Ui.WRAP, r = 12))
+        wifi.setOnClickListener { a.openAndroidSettings() }
         addView(clock, Ui.lp(Ui.WRAP, Ui.WRAP, r = 6))
         home.setPadding(Ui.u(10), Ui.u(10), Ui.u(10), Ui.u(10))
         home.background = Ui.pressable(Ui.round(0, 30f), 30f)
@@ -89,9 +93,29 @@ class TopBar(private val a: MainActivity) : LinearLayout(a) {
     fun startClock() {
         handler.removeCallbacks(tick)
         tick.run()
+        stopWifi?.invoke()
+        stopWifi = a.app.wifi.observe { refreshWifi() }
     }
 
-    fun stopClock() = handler.removeCallbacks(tick)
+    fun stopClock() {
+        handler.removeCallbacks(tick)
+        stopWifi?.invoke()
+        stopWifi = null
+    }
+
+    private fun refreshWifi() {
+        val manager = a.app.wifi
+        val text = when {
+            manager.associated -> tr("Wi-Fi")
+            manager.connecting -> tr("Wi-Fi…")
+            else -> tr("Wi-Fi coupé")
+        }
+        val color = if (manager.associated) Ui.OK else if (manager.connecting) Ui.WARN else Ui.TEXT3
+        Ui.chipText(wifi).text = text
+        Ui.chipText(wifi).setTextColor(color)
+        (wifi.getChildAt(0) as Icon).apply { set(if (manager.connecting) Icon.Kind.WIFI else Icon.Kind.WIFI_OFF); this.color = color }
+        wifi.contentDescription = if (manager.associated && manager.ssid.isNotBlank()) tr("Wi-Fi connecté à %s", manager.ssid) else text
+    }
 
     fun setTitle(t: String, canGoBack: Boolean) {
         titleView.text = t

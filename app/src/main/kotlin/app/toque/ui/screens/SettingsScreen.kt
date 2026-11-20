@@ -120,6 +120,12 @@ class SettingsScreen(a: MainActivity) : Screen(a) {
             Ui.lp(Ui.MATCH, Ui.u(58), t = 8))
         screen.addView(Ui.text(c, tr("Sans geste ni programme en cours, l'écran s'assombrit et n'affiche plus que l'heure. Touchez-le ou tournez le bouton pour reprendre ; le couvercle et la balance le réveillent aussi."),
             15f, Ui.TEXT3).apply { setLineSpacing(0f, 1.1f) }, Ui.lp(t = 8))
+        screen.addView(settingsToggle(c, tr("Couper le Wi-Fi pendant la veille"), a.prefs.standbyWifiOff) {
+            a.prefs.standbyWifiOff = it
+            a.app.wifi.configure()
+        }, Ui.lp(t = 12))
+        screen.addView(Ui.text(c, tr("Le Wi-Fi revient au réveil et temporairement pour vérifier les recettes la nuit. Un téléchargement en cours peut se terminer avant la coupure."),
+            15f, Ui.TEXT3).apply { setLineSpacing(0f, 1.1f) }, Ui.lp(t = 6))
         val knob = listOf("normal" to tr("Normale"), "dim" to tr("Plus légère"), "off" to tr("Éteinte"))
         screen.addView(Ui.text(c, tr("Molette pendant la veille"), 18f, Ui.TEXT), Ui.lp(t = 12))
         screen.addView(dropdown(knob, a.prefs.standbyKnob) { a.prefs.standbyKnob = it },

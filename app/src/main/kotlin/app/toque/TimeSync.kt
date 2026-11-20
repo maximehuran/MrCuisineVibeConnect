@@ -20,7 +20,9 @@ import java.util.TimeZone
 class TimeSync(private val context: Context, private val prefs: Prefs, private val log: Logbook) {
     class Result(val ok: Boolean, val zone: String, val message: String)
 
-    fun run(): Result {
+    fun run(): Result = ToqueApp.of(context).wifi.withNetwork { runConnected() }
+
+    private fun runConnected(): Result {
         val wanted = prefs.timeZone
         var zone: String? = null
         var source = tr("choix manuel")
@@ -110,6 +112,11 @@ class TimeSync(private val context: Context, private val prefs: Prefs, private v
                 val retries = longArrayOf(5_000, 30_000, 60_000, 120_000, 300_000, 600_000, 1_800_000)
                 var i = 0
                 while (true) {
+                    // The nightly recipe window handles time while asleep; ordinary retries must not wake Wi-Fi.
+                    if (ToqueApp.of(context).wifi.asleep) {
+                        try { Thread.sleep(60_000) } catch (_: InterruptedException) { return@Thread }
+                        continue
+                    }
                     val r = try {
                         TimeSync(context, prefs, log).run()
                     } catch (e: Throwable) {

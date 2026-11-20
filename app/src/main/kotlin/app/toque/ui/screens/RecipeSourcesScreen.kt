@@ -1,6 +1,8 @@
 package app.toque.ui.screens
 
 import android.app.AlertDialog
+import android.os.Handler
+import android.os.Looper
 import android.text.InputType
 import android.view.View
 import android.widget.EditText
@@ -23,6 +25,10 @@ import java.util.UUID
 class RecipeSourcesScreen(a: MainActivity) : Screen(a) {
     override val title = tr("Sources de recettes")
     private lateinit var list: LinearLayout
+    private val main = Handler(Looper.getMainLooper())
+    private val tick = object : Runnable {
+        override fun run() { refreshStatuses(); main.postDelayed(this, 1000) }
+    }
     private val statusViews = HashMap<String, TextView>()
 
     override fun build(): View {
@@ -76,12 +82,21 @@ class RecipeSourcesScreen(a: MainActivity) : Screen(a) {
     }
 
     private fun refreshStatuses() {
+        val pending = JsonSourceSync.due(a.app, false).map { it.id }.toSet()
         for ((id, view) in statusViews) {
             val last = a.prefs.jsonSourceLastSync(id)
             val message = if (JsonSourceSync.activeSourceId == id) tr("Synchronisation en cours… (quelques minutes)")
                 else a.prefs.jsonSourceResult(id).ifEmpty { tr("Jamais synchronisé") }
-            val date = if (last > 0) "\n" + tr("Dernière réussite : %s", SimpleDateFormat("dd/MM/yyyy HH:mm", I18n.locale).format(Date(last))) else ""
-            view.text = message + date
+            val format = SimpleDateFormat("dd/MM/yyyy HH:mm:ss", I18n.locale)
+            val date = if (last > 0) "\n" + tr("Dernière vérification réussie : %s", format.format(Date(last))) else ""
+            val attempt = a.prefs.jsonSourceLastAttempt(id)
+            val attempted = if (attempt > 0) "\n" + tr("Dernière tentative : %s", format.format(Date(attempt))) else ""
+            val waiting = if (id !in pending || JsonSourceSync.activeSourceId == id) "" else when {
+                !JsonSourceSync.canChangeCatalog(a.app) -> "\n" + tr("En attente : terminer la recette guidée et laisser le robot au repos.")
+                !a.app.wifi.connected -> "\n" + tr("En attente de la connexion Wi-Fi.")
+                else -> ""
+            }
+            view.text = message + date + attempted + waiting
         }
     }
 
@@ -141,6 +156,9 @@ class RecipeSourcesScreen(a: MainActivity) : Screen(a) {
             }
         }
     }
+
+    override fun onShow() { main.removeCallbacks(tick); tick.run() }
+    override fun onHide() { main.removeCallbacks(tick) }
 
     override fun onSnapshot(s: Snapshot) = refreshStatuses()
 }
