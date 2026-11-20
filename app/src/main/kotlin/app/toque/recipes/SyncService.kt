@@ -91,9 +91,9 @@ class SyncService : IntentService("toque-synchro") {
         while (SystemClock.elapsedRealtime() < end) {
             val state = onMain {
                 when {
+                    !app.machine.connected || !app.machine.receivedSnapshot -> 0
                     app.machine.snapshot.busy || app.prefs.guidedRecipe.isNotBlank() -> -1
-                    app.machine.connected && (app.machine.snapshot.hasSample || app.prefs.mode == Prefs.Mode.DEMO) -> 1
-                    else -> 0
+                    else -> 1
                 }
             }
             if (state != 0) return state == 1

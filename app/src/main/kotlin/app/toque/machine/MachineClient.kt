@@ -25,6 +25,8 @@ import app.toque.core.machine.Verdict
 class MachineClient(private val context: Context) {
     var snapshot = Snapshot()
         private set
+    @Volatile var receivedSnapshot: Boolean = false
+        private set
     val connected: Boolean get() = service != null
 
     private val snapshotListeners = ArrayList<(Snapshot) -> Unit>()
@@ -39,6 +41,7 @@ class MachineClient(private val context: Context) {
         when (msg.what) {
             Ipc.SNAPSHOT -> {
                 snapshot = Ipc.bundleToSnapshot(msg.data)
+                receivedSnapshot = true
                 for (l in ArrayList(snapshotListeners)) l(snapshot)
             }
             Ipc.EVENT -> {
@@ -61,6 +64,7 @@ class MachineClient(private val context: Context) {
 
         override fun onServiceDisconnected(name: ComponentName?) {
             service = null
+            receivedSnapshot = false
             snapshot = snapshot.copy(link = LinkState.OFFLINE, transportUp = false)
             for (l in ArrayList(snapshotListeners)) l(snapshot)
             // Android relance le service (START_STICKY) et rétablit la liaison tout seul.

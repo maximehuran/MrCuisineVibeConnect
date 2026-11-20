@@ -23,7 +23,7 @@ object JsonSourceSync {
         private set
 
     fun canChangeCatalog(app: ToqueApp): Boolean = JsonSourceSyncPolicy.canChangeCatalog(
-        app.machine.connected, app.machine.snapshot.busy, app.prefs.guidedRecipe)
+        app.machine.connected && app.machine.receivedSnapshot, app.machine.snapshot.busy, app.prefs.guidedRecipe)
 
     /** Called on the main thread. Recheck source configuration and idle state before committing. */
     fun sync(app: ToqueApp, source: JsonRecipeSource, automatic: Boolean = false, done: (Boolean, String) -> Unit = { _, _ -> }) {

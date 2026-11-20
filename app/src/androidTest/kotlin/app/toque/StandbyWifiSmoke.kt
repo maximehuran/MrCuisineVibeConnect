@@ -46,7 +46,7 @@ class StandbyWifiSmoke : Instrumentation() {
             // Avoid an unrelated background clock lookup holding the radio during the test.
             Thread.getAllStackTraces().keys.firstOrNull { it.name == "toque-heure" }?.let { it.interrupt(); it.join(60_000) }
             val activity = startActivitySync(Intent(targetContext, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) as MainActivity
-            waitUntil { app.machine.connected }
+            waitUntil { app.machine.connected && app.machine.receivedSnapshot }
             val source = JsonRecipeSource("smoke", "CI catalogue", "https://example.org/catalog.json")
             val text = """{"format":"toque-recettes-1","recipes":[{"id":"smoke-recipe","title":"CI recipe","ingredients":[],"steps":[{"text":"No motor operation"}]}]}"""
             val recipes = JsonRecipeCatalog.parse(text, source)

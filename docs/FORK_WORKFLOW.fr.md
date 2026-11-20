@@ -77,7 +77,7 @@ Deux nouvelles tentatives sont possibles, espacées de quinze minutes. La fenêt
 est limitée à trente minutes ; un transfert HTTP en cours peut mettre un peu plus de temps
 à rendre la main. Aucun programme de cuisson n’est lancé ni arrêté par cette tâche.
 
-Une recette guidée ouverte, une machine occupée ou une base indisponible reportent la tâche.
+Une recette guidée ouverte, une machine occupée ou un service machine indisponible reportent la tâche.
 Au réveil, une vérification chaque minute rattrape les vérifications quotidiennes dues,
 avec un délai de quinze minutes entre tentatives en cas d’échec. Le robot doit rester alimenté.
 Chaque source JSON se vérifie aussi au lancement de Toque. La dernière date réussie est
