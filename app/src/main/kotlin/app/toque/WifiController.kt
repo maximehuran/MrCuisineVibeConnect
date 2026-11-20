@@ -30,6 +30,10 @@ class WifiController(private val app: ToqueApp) {
     val associated: Boolean get() = network.getNetworkInfo(ConnectivityManager.TYPE_WIFI)?.isConnected == true
     val ssid: String get() = wifi.connectionInfo?.ssid.orEmpty().trim('"').takeUnless { it == "<unknown ssid>" }.orEmpty()
     val connected: Boolean get() = network.activeNetworkInfo?.isConnected == true
+    private val ready: Boolean get() {
+        val active = network.activeNetworkInfo ?: return false
+        return active.isConnected && (active.type != ConnectivityManager.TYPE_WIFI || wifi.wifiState == WifiManager.WIFI_STATE_ENABLED)
+    }
     val enabled: Boolean get() = wifi.isWifiEnabled
     val connecting: Boolean get() = wifi.wifiState == WifiManager.WIFI_STATE_ENABLING || enabled
 
@@ -77,11 +81,11 @@ class WifiController(private val app: ToqueApp) {
         val token = hold()
         try {
             val end = SystemClock.elapsedRealtime() + 45_000L
-            while (!connected && SystemClock.elapsedRealtime() < end) {
+            while (!ready && SystemClock.elapsedRealtime() < end) {
                 if (Thread.currentThread().isInterrupted) throw IOException(tr("Synchronisation interrompue."))
                 Thread.sleep(250)
             }
-            if (!connected) throw IOException(tr("Connexion Wi-Fi indisponible après 45 secondes."))
+            if (!ready) throw IOException(tr("Connexion Wi-Fi indisponible après 45 secondes."))
             return block()
         } finally { token.close() }
     }
@@ -97,7 +101,7 @@ class WifiController(private val app: ToqueApp) {
                         switch(false)
                     }
                     StandbyWifiPolicy.Action.ENABLE -> switch(true)
-                    StandbyWifiPolicy.Action.KEEP -> if (owned && radioOn && policy.mayReleaseOwnership()) app.prefs.wifiOwned = false
+                    StandbyWifiPolicy.Action.KEEP -> if (owned && wifi.isWifiEnabled && policy.mayReleaseOwnership()) app.prefs.wifiOwned = false
                 }
             } catch (e: Exception) { app.log.write("wifi", "${e.message ?: e}") }
             notifyState()

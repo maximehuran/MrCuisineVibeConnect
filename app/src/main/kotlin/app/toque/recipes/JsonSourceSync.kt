@@ -56,7 +56,7 @@ object JsonSourceSync {
     }
 
     /** Main-thread commit shared by HTTP 200 and 304: a successful check always advances the date. */
-    internal fun applyResponse(app: ToqueApp, source: JsonRecipeSource, response: JsonCatalogHttp.Response,
+    fun applyResponse(app: ToqueApp, source: JsonRecipeSource, response: JsonCatalogHttp.Response,
                                recipes: List<Recipe>?, automatic: Boolean): String {
         check(Looper.myLooper() == Looper.getMainLooper())
         val current = app.prefs.jsonRecipeSources.firstOrNull { it.id == source.id }

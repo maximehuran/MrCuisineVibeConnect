@@ -11,6 +11,8 @@ adb('install', '-r', 'app/build/outputs/apk/release/app-release.apk')
 adb('install', '-r', 'app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk')
 result = adb('shell', 'am', 'instrument', '-w', 'app.toque.test/app.toque.StandbyWifiSmoke')
 print(result)
+if 'STANDBY_WIFI_SMOKE_OK' not in result:
+    print(adb('logcat', '-d', '-t', '500'))
 assert 'STANDBY_WIFI_SMOKE_OK' in result
 assert 'STANDBY_WIFI_SMOKE_FAILED' not in result
 Path('android-smoke').mkdir(exist_ok=True)

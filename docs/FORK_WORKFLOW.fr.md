@@ -59,3 +59,29 @@ la reconnaît. Pour retirer une PR, `git revert -m 1 <merge>`.
 l’ouverture de l’application d’origine, ainsi que la synchronisation nocturne.
 **Recettes → Sources de recettes** ouvre la gestion des catalogues personnels.
 Le bloc **Date, heure et langue** regroupe les anciens réglages de fuseau, d’horloge et de langue.
+
+## Wi-Fi pendant la veille et synchronisations
+
+**Réglages → Mise en veille → Couper le Wi-Fi pendant la veille** est activé par défaut.
+Toque réactive au réveil le Wi-Fi qu’il a lui-même coupé ; un Wi-Fi désactivé manuellement
+reste désactivé. Les transferts déjà lancés (recettes, heure ou APK) gardent la connexion
+jusqu’à leur fin, même si l’écran passe en veille. La barre supérieure indique le Wi-Fi
+connecté, en connexion ou coupé. La connexion au réseau ne garantit pas l’accès à Internet.
+Toucher cet indicateur ouvre les paramètres Android.
+
+Vers **3 h 30** (fenêtre de cinq minutes), une tâche commune vérifie les sources JSON
+personnelles activées, puis Lidl si sa synchronisation automatique est activée. Elle attend
+la connexion jusqu’à 45 secondes, garde l’écran en veille et recoupe le Wi-Fi à la fin,
+y compris en cas d’échec. Si la personne réveille l’écran entre-temps, le Wi-Fi reste actif.
+Deux nouvelles tentatives sont possibles, espacées de quinze minutes. La fenêtre de travail
+est limitée à trente minutes ; un transfert HTTP en cours peut mettre un peu plus de temps
+à rendre la main. Aucun programme de cuisson n’est lancé ni arrêté par cette tâche.
+
+Une recette guidée ouverte, une machine occupée ou une base indisponible reportent la tâche.
+Au réveil, une vérification chaque minute rattrape les vérifications quotidiennes dues,
+avec un délai de quinze minutes entre tentatives en cas d’échec. Le robot doit rester alimenté.
+Chaque source JSON se vérifie aussi au lancement de Toque. La dernière date réussie est
+mise à jour après une réponse HTTP 200 **ou 304 (catalogue inchangé)** ; les erreurs ne la
+font pas avancer. La page des sources montre aussi la dernière tentative et les motifs d’attente.
+Les synchronisations se basent sur le jour local pour éviter de sauter une nuit si l’alarme
+se déclenche quelques minutes plus tôt que la veille.

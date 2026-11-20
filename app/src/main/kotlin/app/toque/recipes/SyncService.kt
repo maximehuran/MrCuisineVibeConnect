@@ -41,11 +41,13 @@ class SyncService : IntentService("toque-synchro") {
         var pendingSources = emptyList<JsonRecipeSource>()
         val began = System.currentTimeMillis()
         try {
+            if (!app.prefs.autoSync && app.prefs.jsonRecipeSources.none { it.autoSync }) return
             if (!awaitIdle(app)) {
                 app.log.write("synchro-auto", "reportée : machine occupée, recette guidée ouverte ou base indisponible")
                 retry = true
                 return
             }
+            app.recipes.refresh() // A nocturnal service can start without ever opening the activity.
             val sources = onMain { JsonSourceSync.due(app, nightly) }
             pendingSources = sources
             val lidl = app.prefs.autoSync && SyncSchedule.dailyDue(System.currentTimeMillis(), app.prefs.lastSyncMs)
@@ -137,7 +139,8 @@ class SyncService : IntentService("toque-synchro") {
                     try {
                         val now = System.currentTimeMillis()
                         if (now >= SyncSchedule.MIN_CLOCK_MS) {
-                            val day = Calendar.getInstance().let { "${it.timeZone.id}:${it.get(Calendar.YEAR)}:${it.get(Calendar.DAY_OF_YEAR)}" }
+                            val day = Calendar.getInstance().let { "${it.timeZone.id}:${it.get(Calendar.YEAR)}:${it.get(Calendar.DAY_OF_YEAR)}" } +
+                                ":${app.prefs.autoSync}:" + app.prefs.jsonRecipeSources.filter { it.autoSync }.joinToString { it.id }
                             if (day != scheduledDay) { schedule(app); scheduledDay = day }
                             if (!running && !app.wifi.asleep && app.wifi.connected && JsonSourceSync.canChangeCatalog(app) &&
                                 SystemClock.elapsedRealtime() - lastAttempt >= SyncSchedule.RETRY_MS &&
@@ -156,6 +159,8 @@ class SyncService : IntentService("toque-synchro") {
             if (System.currentTimeMillis() < SyncSchedule.MIN_CLOCK_MS) return
             val am = c.getSystemService(Context.ALARM_SERVICE) as AlarmManager
             val pi = PendingIntent.getBroadcast(c, 0, Intent(c, SyncAlarm::class.java), PendingIntent.FLAG_UPDATE_CURRENT)
+            val prefs = Prefs(c)
+            if (!prefs.autoSync && prefs.jsonRecipeSources.none { it.autoSync }) { am.cancel(pi); return }
             val cal = Calendar.getInstance().apply {
                 set(Calendar.HOUR_OF_DAY, 3); set(Calendar.MINUTE, 30); set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
                 if (timeInMillis <= System.currentTimeMillis()) add(Calendar.DAY_OF_MONTH, 1)

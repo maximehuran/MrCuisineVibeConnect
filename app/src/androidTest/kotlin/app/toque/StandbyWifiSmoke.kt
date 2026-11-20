@@ -11,6 +11,7 @@ import android.os.Bundle
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
+import app.toque.core.i18n.I18n
 import app.toque.core.recipes.JsonCatalogHttp
 import app.toque.core.recipes.JsonRecipeCatalog
 import app.toque.core.recipes.JsonRecipeSource
@@ -35,6 +36,8 @@ class StandbyWifiSmoke : Instrumentation() {
         try {
             check(Build.HARDWARE.contains("ranchu") || Build.HARDWARE.contains("goldfish")) { "CI emulator required" }
             val app = targetContext.applicationContext as ToqueApp
+            app.prefs.language = "fr"
+            I18n.select("fr")
             app.prefs.autoSync = false
             app.prefs.mode = Prefs.Mode.DEMO
             app.prefs.standbyWifiOff = false
@@ -58,10 +61,11 @@ class StandbyWifiSmoke : Instrumentation() {
                 check(JsonSourceSync.due(app, true).isEmpty()) { "Already checked source must not run again tonight" }
                 val before = app.prefs.jsonSourceLastSync(source.id)
                 app.prefs.guidedRecipe = "ci-guided-recipe"
+                var deferred = false
                 try {
                     JsonSourceSync.applyResponse(app, source, JsonCatalogHttp.Response(null, "v1", now + 1), null, true)
-                    error("Guided recipe must defer the import")
-                } catch (_: IllegalStateException) { }
+                } catch (_: IllegalStateException) { deferred = true }
+                check(deferred) { "Guided recipe must defer the import" }
                 check(app.prefs.jsonSourceLastSync(source.id) == before)
                 app.prefs.guidedRecipe = ""
                 activity.push(SettingsScreen(activity))
