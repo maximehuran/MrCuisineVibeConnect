@@ -5,6 +5,7 @@ import android.app.Instrumentation
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
+import android.graphics.Canvas
 import android.net.wifi.WifiManager
 import android.os.Build
 import android.os.Bundle
@@ -116,8 +117,14 @@ class StandbyWifiSmoke : Instrumentation() {
     private fun screenshot(a: Activity, name: String) {
         waitForIdleSync()
         Thread.sleep(750) // Let rotation/layout reach the display compositor before capturing it.
-        val image = requireNotNull(uiAutomation.takeScreenshot())
-        File(a.getExternalFilesDir(null), name).outputStream().use { image.compress(Bitmap.CompressFormat.PNG, 100, it) }
-        image.recycle()
+        // Draw the actual Android view tree: API 23's emulator framebuffer can fail during rotation.
+        runOnMainSync {
+            val root = a.window.decorView
+            check(root.width > 0 && root.height > 0)
+            val image = Bitmap.createBitmap(root.width, root.height, Bitmap.Config.ARGB_8888)
+            root.draw(Canvas(image))
+            File(a.getExternalFilesDir(null), name).outputStream().use { image.compress(Bitmap.CompressFormat.PNG, 100, it) }
+            image.recycle()
+        }
     }
 }

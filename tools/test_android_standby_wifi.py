@@ -10,8 +10,6 @@ assert adb('shell', 'getprop', 'ro.kernel.qemu') == '1'
 api = sys.argv[1] if len(sys.argv) > 1 else '23'
 assert api in {'23', '28'}
 assert adb('shell', 'getprop', 'ro.build.version.sdk') == api
-adb('shell', 'wm', 'size', '1024x600')
-adb('shell', 'wm', 'density', '160')
 adb('install', '-r', 'app/build/outputs/apk/release/app-release.apk')
 adb('install', '-r', 'app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk')
 result = adb('shell', 'am', 'instrument', '-w', 'app.toque.test/app.toque.StandbyWifiSmoke')
