@@ -4,7 +4,7 @@ Toque can read additional public HTTPS catalogues in its existing `toque-recette
 
 ## On the robot
 
-Open **Settings → JSON recipe sources → Manage personal catalogues**. Add a name and an HTTPS catalogue URL, then tap **Sync**. Each source has its own automatic-sync switch, last successful sync and error message. Names and URLs can be edited without changing the source's identity or losing its favorites.
+Open **Settings → Recipes → Recipe sources**. Add a name and an HTTPS catalogue URL, then tap **Sync**. Each source has its own automatic-sync switch, last successful sync and error message. Names and URLs can be edited without changing the source's identity or losing its favorites.
 
 There are no external sources configured by default. Public catalogues need no account or GitHub token. This first version supports up to 20 sources, 500 recipes and 2 MiB per catalogue. Authentication and downloading custom recipe photos are outside this change. The catalogue host must use a certificate trusted by the device; TLS verification is never bypassed.
 

@@ -49,3 +49,13 @@ git push
 
 Quand une PR est fusionnée upstream, il n'y a rien à faire : le merge de la release suivante
 la reconnaît. Pour retirer une PR, `git revert -m 1 <merge>`.
+
+## Organisation des réglages
+
+À gauche : **Sécurité**, **Mises à jour**, puis **Machine** (contenu inchangé).
+À droite : **Recettes**, **Mise en veille**, **Date, heure et langue**, puis **Outils**.
+
+**Recettes → Recettes Lidl** ouvre une page regroupant la synchronisation, l’import et
+l’ouverture de l’application d’origine, ainsi que la synchronisation nocturne.
+**Recettes → Sources de recettes** ouvre la gestion des catalogues personnels.
+Le bloc **Date, heure et langue** regroupe les anciens réglages de fuseau, d’horloge et de langue.

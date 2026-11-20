@@ -118,7 +118,7 @@ To open Toque from the PC: `adb shell am start -n app.toque/.ui.MainActivity`.
 
 ## 6. Lidl recipes
 
-**Settings › Lidl recipes › Sync** (the robot needs Wi-Fi). Toque downloads the official
+**Settings › Recipes › Lidl recipes › Sync** (the robot needs Wi-Fi). Toque downloads the official
 Monsieur Cuisine connect recipes from monsieur-cuisine.com, then their photos: about 15 minutes the
 first time, then only new or changed recipes. After that, the sync runs every night at 3:30 am.
 Recipes are in the interface language (French by default).
