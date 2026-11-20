@@ -58,7 +58,6 @@
   "BASE SIMULÉE": "SIMULATED BASE",
   "Balance": "Scale",
   "Balance : %d g": "Scale: %d g",
-  "Base absente": "No base",
   "Base de l'appli d'origine introuvable": "Stock app database not found",
   "Base illisible : %s": "Unreadable database: %s",
   "Base moteur": "Motor base",
@@ -208,7 +207,6 @@
   "Liaison": "Link",
   "Liaison avec le service perdue": "Link with the service lost",
   "Liaison interrompue : %s": "Link interrupted: %s",
-  "Liaison perdue": "Link lost",
   "Liste des recettes…": "Recipe list…",
   "Liste des recettes… %d / %d": "Recipe list… %d / %d",
   "Machine": "Machine",
@@ -470,5 +468,6 @@
   "Dernière vérification réussie : %s": "Last successful check: %s",
   "Dernière tentative : %s": "Last attempt: %s",
   "En attente : terminer la recette guidée et laisser le robot au repos.": "Waiting: finish the guided recipe and leave the robot idle.",
-  "En attente de la connexion Wi-Fi.": "Waiting for Wi-Fi connection."
+  "En attente de la connexion Wi-Fi.": "Waiting for Wi-Fi connection.",
+  "Robot indisponible": "Robot unavailable"
 }
