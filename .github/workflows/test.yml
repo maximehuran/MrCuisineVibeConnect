@@ -17,6 +17,7 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
+          cache: gradle
       - name: SQLite migration and source isolation
         run: python3 tools/test_recipe_storage.py
       - name: Unit tests and Android build

@@ -13,6 +13,12 @@ result = adb('shell', 'am', 'instrument', '-w', 'app.toque.test/app.toque.Standb
 print(result)
 if 'STANDBY_WIFI_SMOKE_OK' not in result:
     print(adb('logcat', '-d', '-t', '500'))
+    try:
+        adb('root')
+        adb('wait-for-device')
+        print(adb('shell', 'cat', '/data/data/app.toque/files/journal.txt'))
+    except subprocess.CalledProcessError:
+        pass
 assert 'STANDBY_WIFI_SMOKE_OK' in result
 assert 'STANDBY_WIFI_SMOKE_FAILED' not in result
 Path('android-smoke').mkdir(exist_ok=True)
