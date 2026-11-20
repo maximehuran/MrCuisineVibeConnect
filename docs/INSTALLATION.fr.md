@@ -121,7 +121,7 @@ Pour ouvrir Toque depuis le PC : `adb shell am start -n app.toque/.ui.MainActivi
 
 ## 6. Recettes Lidl
 
-**Réglages › Recettes Lidl › Synchroniser** (le robot doit être en Wi-Fi). Toque télécharge les
+**Réglages › Recettes › Recettes Lidl › Synchroniser** (le robot doit être en Wi-Fi). Toque télécharge les
 recettes officielles du Monsieur Cuisine connect sur monsieur-cuisine.com, puis leurs photos :
 environ 15 minutes la première fois, ensuite seulement les recettes nouvelles ou modifiées. La
 synchro se refait chaque nuit à 3 h 30. Les recettes sont dans la langue de l'interface (le

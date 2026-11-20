@@ -21,7 +21,7 @@ import java.util.UUID
 
 /** Manage public catalogue URLs; no default external source or executable plugins. */
 class RecipeSourcesScreen(a: MainActivity) : Screen(a) {
-    override val title = tr("Sources de recettes JSON")
+    override val title = tr("Sources de recettes")
     private lateinit var list: LinearLayout
     private val statusViews = HashMap<String, TextView>()
 
