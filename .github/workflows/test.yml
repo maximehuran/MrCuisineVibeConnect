@@ -20,7 +20,21 @@ jobs:
       - name: SQLite migration and source isolation
         run: python3 tools/test_recipe_storage.py
       - name: Unit tests and Android build
-        run: ./gradlew --no-daemon :core:test :app:assembleRelease
+        run: ./gradlew --no-daemon :core:test :app:assembleRelease :app:assembleAndroidTest
+      - name: Enable emulator acceleration
+        run: sudo chmod 666 /dev/kvm
+      - name: Android 6 Wi-Fi lifecycle and unchanged catalogue check date
+        uses: ReactiveCircus/android-emulator-runner@4c44018e59b437e86cdfc41da381398f93ed8808
+        with:
+          api-level: 23
+          target: default
+          arch: x86_64
+          script: python3 tools/test_android_standby_wifi.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: android-standby-wifi-smoke
+          path: android-smoke/
       - uses: actions/upload-artifact@v4
         if: always()
         with:

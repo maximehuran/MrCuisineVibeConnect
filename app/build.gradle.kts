@@ -12,6 +12,7 @@ android {
     defaultConfig {
         applicationId = "app.toque"
         minSdk = 23          // Android 6.0, celui du Monsieur Cuisine Connect
+        testInstrumentationRunner = "app.toque.StandbyWifiSmoke"
         targetSdk = 28
         // Pour publier une mise à jour : augmenter les deux valeurs puis pousser sur GitHub
         // (la version est publiée automatiquement, voir .github/workflows/release.yml).
