@@ -114,6 +114,8 @@ class StandbyWifiSmoke : Instrumentation() {
     }
 
     private fun screenshot(a: Activity, name: String) {
+        waitForIdleSync()
+        Thread.sleep(750) // Let rotation/layout reach the display compositor before capturing it.
         val image = requireNotNull(uiAutomation.takeScreenshot())
         File(a.getExternalFilesDir(null), name).outputStream().use { image.compress(Bitmap.CompressFormat.PNG, 100, it) }
         image.recycle()

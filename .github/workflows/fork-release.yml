@@ -57,6 +57,14 @@ jobs:
           target: default
           arch: x86_64
           script: python3 tools/test_android_standby_wifi.py
+      - name: Wi-Fi radio lifecycle on an emulator with Wi-Fi support
+        if: steps.prepare.outputs.publish == 'true'
+        uses: ReactiveCircus/android-emulator-runner@4c44018e59b437e86cdfc41da381398f93ed8808
+        with:
+          api-level: 28
+          target: default
+          arch: x86_64
+          script: python3 tools/test_android_standby_wifi.py 28
       - name: Verify APK, commit only the tested merge and publish
         if: steps.prepare.outputs.publish == 'true'
         run: python3 tools/fork/release.py publish --plan "$RELEASE_PLAN"
